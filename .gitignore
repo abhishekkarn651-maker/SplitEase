@@ -1,0 +1,21 @@
+# ========================================
+# SplitEase — .gitignore
+# ========================================
+
+# Dependencies
+node_modules/
+
+# Environment variables (keep your secrets safe!)
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
