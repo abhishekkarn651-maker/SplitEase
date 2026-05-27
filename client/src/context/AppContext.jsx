@@ -199,6 +199,28 @@ export function AppProvider({ children }) {
     }
   }, []);
 
+  const leaveGroup = useCallback(async (id) => {
+    try {
+      await api.leaveGroup(id);
+      dispatch({ type: ACTIONS.REMOVE_GROUP, payload: id });
+      toast.success("Successfully left the group");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to leave group");
+      throw err;
+    }
+  }, []);
+
+  const removeMemberFromGroup = useCallback(async (groupId, userId) => {
+    try {
+      const { data } = await api.removeMemberFromGroup(groupId, userId);
+      dispatch({ type: ACTIONS.SET_CURRENT_GROUP, payload: data.data });
+      toast.success("Member removed successfully");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to remove member");
+      throw err;
+    }
+  }, []);
+
   // ── Expense Actions ──
 
   const loadExpenses = useCallback(async (groupId, params = {}) => {
@@ -338,6 +360,8 @@ export function AppProvider({ children }) {
     addGroup,
     editGroup,
     removeGroup,
+    leaveGroup,
+    removeMemberFromGroup,
     loadExpenses,
     addExpense,
     editExpense,

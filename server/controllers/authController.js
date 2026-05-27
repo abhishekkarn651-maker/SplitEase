@@ -147,4 +147,83 @@ const getMe = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { signup, login, getMe };
+// -----------------------------------------
+// @route   PUT /api/auth/profile
+// @desc    Update user profile details
+// @access  Protected
+// -----------------------------------------
+const updateProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select("+password");
+  if (!user) {
+    const error = new Error("User not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const { name, username, email, currentPassword, newPassword } = req.body;
+
+  // If email is changing, ensure new email is not taken
+  if (email && email.toLowerCase() !== user.email.toLowerCase()) {
+    const emailExists = await User.findOne({ email: email.toLowerCase() });
+    if (emailExists) {
+      const error = new Error("An account with this email already exists");
+      error.statusCode = 400;
+      throw error;
+    }
+    user.email = email.toLowerCase().trim();
+  }
+
+  // If username is changing, ensure new username is not taken
+  if (username && username.toLowerCase() !== user.username.toLowerCase()) {
+    const usernameExists = await User.findOne({ username: username.toLowerCase() });
+    if (usernameExists) {
+      const error = new Error("This username is already taken");
+      error.statusCode = 400;
+      throw error;
+    }
+    user.username = username.toLowerCase().trim();
+  }
+
+  if (name) {
+    user.name = name.trim();
+  }
+
+  // Handle password change if requested
+  if (newPassword) {
+    if (!currentPassword) {
+      const error = new Error("Please provide your current password to set a new password");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      const error = new Error("Incorrect current password");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (newPassword.length < 6) {
+      const error = new Error("New password must be at least 6 characters");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    user.password = newPassword;
+  }
+
+  await user.save();
+
+  res.json({
+    success: true,
+    message: "Profile updated successfully",
+    data: {
+      _id: user._id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+    },
+  });
+});
+
+module.exports = { signup, login, getMe, updateProfile };

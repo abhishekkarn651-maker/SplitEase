@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import GroupList from "./components/groups/GroupList";
 import CreateGroup from "./components/groups/CreateGroup";
 import GroupDetails from "./components/groups/GroupDetails";
+import Profile from "./pages/Profile";
 
 /**
  * App — Root component.
@@ -36,16 +37,17 @@ export default function App() {
                 <Route path="/groups" element={<GroupList />} />
                 <Route path="/groups/new" element={<CreateGroup />} />
                 <Route path="/groups/:id" element={<GroupDetails />} />
+                <Route path="/profile" element={<Profile />} />
               </Route>
             </Route>
           </Routes>
         </Router>
 
-        {/* Toast notifications — positioned top-right */}
+        {/* Toast notifications — positioned bottom-center with shorter duration */}
         <Toaster
-          position="top-right"
+          position="bottom-center"
           toastOptions={{
-            duration: 3000,
+            duration: 1500,
             style: {
               borderRadius: "12px",
               padding: "12px 16px",

@@ -69,6 +69,9 @@ export const loginUser = (data) => API.post("/auth/login", data);
 /** Get current authenticated user */
 export const getMe = () => API.get("/auth/me");
 
+/** Update user profile */
+export const updateProfile = (data) => API.put("/auth/profile", data);
+
 // ========================================
 // GROUP API CALLS
 // ========================================
@@ -94,6 +97,13 @@ export const deleteGroup = (id) => API.delete(`/groups/${id}`);
 /** Get settlement summary for a group */
 export const fetchSettlements = (groupId) =>
   API.get(`/groups/${groupId}/settlements`);
+
+/** Leave a group */
+export const leaveGroup = (id) => API.put(`/groups/${id}/leave`);
+
+/** Remove a member from a group */
+export const removeMemberFromGroup = (groupId, userId) =>
+  API.delete(`/groups/${groupId}/members/${userId}`);
 
 // ========================================
 // EXPENSE API CALLS

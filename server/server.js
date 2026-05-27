@@ -32,6 +32,9 @@ if (process.env.NODE_ENV === "development") {
 // ========================================
 // API Routes (will be added in Step 2)
 // ========================================
+app.get("/", (req, res) => {
+  res.send("SplitEase Backend Running 🚀");
+});
 
 // Health check endpoint — useful for testing if the server is alive
 app.get("/api/health", (req, res) => {
@@ -66,6 +69,14 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   // Connect to MongoDB first, then start listening
   await connectDB();
+
+  // Run DB migration check
+  try {
+    const runMigration = require("./utils/migration");
+    await runMigration();
+  } catch (err) {
+    console.error("Migration failed:", err);
+  }
 
   app.listen(PORT, () => {
     console.log(`\n🚀 SplitEase Server running on http://localhost:${PORT}`);

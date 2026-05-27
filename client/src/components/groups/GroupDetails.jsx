@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import ExpenseForm from "../expenses/ExpenseForm";
 import ExpenseList from "../expenses/ExpenseList";
@@ -13,6 +13,8 @@ import {
   HiOutlineBanknotes,
   HiOutlineScale,
   HiOutlinePencilSquare,
+  HiOutlineXMark,
+  HiOutlineArrowRightOnRectangle,
 } from "react-icons/hi2";
 import EditGroupModal from "./EditGroupModal";
 import { useAuth } from "../../context/AuthContext";
@@ -30,6 +32,7 @@ import { useAuth } from "../../context/AuthContext";
  */
 export default function GroupDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const {
     currentGroup,
     expenses,
@@ -40,6 +43,8 @@ export default function GroupDetails() {
     loadSettlements,
     darkMode,
     sendInvite,
+    leaveGroup,
+    removeMemberFromGroup,
   } = useApp();
   const { user } = useAuth();
 
@@ -98,11 +103,35 @@ export default function GroupDetails() {
     }
   };
 
+  const handleLeaveGroup = async () => {
+    if (window.confirm("Are you sure you want to leave this group?")) {
+      try {
+        await leaveGroup(id);
+        navigate("/groups");
+      } catch (err) {
+        // Handled in context
+      }
+    }
+  };
+
+  const handleRemoveMember = async (memberId) => {
+    if (window.confirm("Are you sure you want to remove this member from the group?")) {
+      try {
+        await removeMemberFromGroup(id, memberId);
+        await loadSettlements(id);
+      } catch (err) {
+        // Handled in context
+      }
+    }
+  };
+
   // Search expenses (client-side filter for instant feedback)
-  const filteredExpenses = expenses.filter((exp) =>
-    exp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    exp.paidBy.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredExpenses = expenses.filter((exp) => {
+    const titleMatch = exp.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const paidByStr = exp.paidBy?.name || exp.paidBy?.username || exp.paidBy || "";
+    const paidByMatch = paidByStr.toLowerCase().includes(searchQuery.toLowerCase());
+    return titleMatch || paidByMatch;
+  });
 
   // Calculate total expenses amount
   const totalAmount = expenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -217,6 +246,17 @@ export default function GroupDetails() {
               </button>
             )}
             <button
+              onClick={handleLeaveGroup}
+              className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow-md cursor-pointer ${
+                darkMode
+                  ? "bg-surface-700 text-red-400 hover:text-red-300 hover:bg-surface-600 border border-surface-600"
+                  : "bg-surface-100 text-red-600 hover:bg-red-50 hover:text-red-700 border border-surface-200"
+              }`}
+            >
+              <HiOutlineArrowRightOnRectangle className="w-4 h-4" />
+              Leave Group
+            </button>
+            <button
               onClick={() => {
                 setEditingExpense(null);
                 setShowForm(true);
@@ -235,6 +275,7 @@ export default function GroupDetails() {
             const memberUser = member.user || {};
             const displayName = memberUser.name || memberUser.username || "Unknown";
             const uname = memberUser.username || "";
+            const isMe = (memberUser._id || memberUser) === user?._id;
             return (
               <span
                 key={memberUser._id || uname}
@@ -258,6 +299,15 @@ export default function GroupDetails() {
                   <span className={`text-[10px] px-1 py-0.5 rounded font-semibold ${
                     darkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-50 text-amber-600"
                   }`}>Admin</span>
+                )}
+                {isAdmin && !isMe && (
+                  <button
+                    onClick={() => handleRemoveMember(memberUser._id)}
+                    className="ml-1 hover:text-red-500 transition-colors p-0.5 rounded cursor-pointer"
+                    title={`Remove ${displayName}`}
+                  >
+                    <HiOutlineXMark className="w-3.5 h-3.5" />
+                  </button>
                 )}
               </span>
             );

@@ -53,14 +53,27 @@ export default function ExpenseList({ expenses, onEdit, group }) {
 
         // Determine who is splitting this expense
         // If contributors array is empty, everyone in the group shares
-        const splitMembers =
-          expense.contributors.length > 0
-            ? expense.contributors
-            : group?.members || [];
+        const contributorsList = expense.contributors && expense.contributors.length > 0
+          ? expense.contributors.map(c => ({
+              id: c?._id ? c._id.toString() : c?.toString(),
+              name: c?.name || c,
+              username: c?.username || "",
+            }))
+          : (group?.members || []).map(m => ({
+              id: m.user?._id ? m.user._id.toString() : m.user?.toString(),
+              name: m.user?.name || m.user?.username || m.user,
+              username: m.user?.username || "",
+            }));
 
         // Per-person share for this expense
         const perPersonShare =
-          splitMembers.length > 0 ? expense.amount / splitMembers.length : 0;
+          contributorsList.length > 0 ? expense.amount / contributorsList.length : 0;
+
+        const paidById = expense.paidBy?._id ? expense.paidBy._id.toString() : expense.paidBy?.toString();
+        const paidByName = expense.paidBy?.name || expense.paidBy || "Unknown";
+        const payerNames = expense.payerMode === "multiple" && expense.paidByMultiple?.length > 0
+          ? expense.paidByMultiple.map((p) => p.member?.name || p.member).join(", ")
+          : paidByName;
 
         return (
           <div
@@ -98,12 +111,10 @@ export default function ExpenseList({ expenses, onEdit, group }) {
                     }`}
                   >
                     <span className="font-medium">
-                      {expense.payerMode === "multiple" && expense.paidByMultiple?.length > 0
-                        ? expense.paidByMultiple.map((p) => p.member).join(", ")
-                        : expense.paidBy}
+                      {payerNames}
                     </span>{" "}
                     paid ₹{expense.amount.toLocaleString()} •{" "}
-                    {splitMembers.length} people
+                    {contributorsList.length} people
                   </p>
                   {expense.note && (
                     <p
@@ -195,51 +206,54 @@ export default function ExpenseList({ expenses, onEdit, group }) {
                   {/* Payer highlight(s) */}
                   {expense.payerMode === "multiple" && expense.paidByMultiple?.length > 0 ? (
                     // Multi-payer: show each payer
-                    expense.paidByMultiple.map((payer, idx) => (
-                      <div
-                        key={idx}
-                        className={`flex items-center justify-between text-sm px-3 py-2 rounded-lg ${
-                          darkMode
-                            ? "bg-primary-900/20 border border-primary-800"
-                            : "bg-primary-50 border border-primary-100"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                              darkMode
-                                ? "bg-primary-800 text-primary-300"
-                                : "bg-primary-200 text-primary-700"
-                            }`}
-                          >
-                            {payer.member.charAt(0).toUpperCase()}
+                    expense.paidByMultiple.map((payer, idx) => {
+                      const pName = payer.member?.name || payer.member || "Unknown";
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex items-center justify-between text-sm px-3 py-2 rounded-lg ${
+                            darkMode
+                              ? "bg-primary-900/20 border border-primary-800"
+                              : "bg-primary-50 border border-primary-100"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                darkMode
+                                  ? "bg-primary-800 text-primary-300"
+                                  : "bg-primary-200 text-primary-700"
+                              }`}
+                            >
+                              {pName.toString().charAt(0).toUpperCase()}
+                            </div>
+                            <span
+                              className={`font-medium ${
+                                darkMode ? "text-primary-300" : "text-primary-700"
+                              }`}
+                            >
+                              {pName}
+                            </span>
+                            <span
+                              className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${
+                                darkMode
+                                  ? "bg-primary-800 text-primary-300"
+                                  : "bg-primary-200 text-primary-700"
+                              }`}
+                            >
+                              Paid
+                            </span>
                           </div>
                           <span
-                            className={`font-medium ${
+                            className={`font-semibold ${
                               darkMode ? "text-primary-300" : "text-primary-700"
                             }`}
                           >
-                            {payer.member}
-                          </span>
-                          <span
-                            className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${
-                              darkMode
-                                ? "bg-primary-800 text-primary-300"
-                                : "bg-primary-200 text-primary-700"
-                            }`}
-                          >
-                            Paid
+                            ₹{payer.amount.toLocaleString()}
                           </span>
                         </div>
-                        <span
-                          className={`font-semibold ${
-                            darkMode ? "text-primary-300" : "text-primary-700"
-                          }`}
-                        >
-                          ₹{payer.amount.toLocaleString()}
-                        </span>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     // Single payer
                     <div
@@ -257,14 +271,14 @@ export default function ExpenseList({ expenses, onEdit, group }) {
                               : "bg-primary-200 text-primary-700"
                           }`}
                         >
-                          {expense.paidBy.charAt(0).toUpperCase()}
+                          {paidByName.toString().charAt(0).toUpperCase()}
                         </div>
                         <span
                           className={`font-medium ${
                             darkMode ? "text-primary-300" : "text-primary-700"
                           }`}
                         >
-                          {expense.paidBy}
+                          {paidByName}
                         </span>
                         <span
                           className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${
@@ -296,20 +310,23 @@ export default function ExpenseList({ expenses, onEdit, group }) {
                   </p>
 
                   {/* Each contributor's share */}
-                  {splitMembers.map((member) => {
+                  {contributorsList.map((member) => {
                     // Determine how much this member paid
                     let memberPaid = 0;
                     if (expense.payerMode === "multiple" && expense.paidByMultiple?.length > 0) {
-                      const payerEntry = expense.paidByMultiple.find((p) => p.member === member);
+                      const payerEntry = expense.paidByMultiple.find((p) => {
+                        const pid = p.member?._id ? p.member._id.toString() : p.member?.toString();
+                        return pid === member.id;
+                      });
                       memberPaid = payerEntry ? payerEntry.amount : 0;
                     } else {
-                      memberPaid = member === expense.paidBy ? expense.amount : 0;
+                      memberPaid = paidById === member.id ? expense.amount : 0;
                     }
                     const netBalance = memberPaid - perPersonShare;
 
                     return (
                       <div
-                        key={member}
+                        key={member.id}
                         className={`flex items-center justify-between text-sm px-3 py-2 rounded-lg ${
                           darkMode
                             ? "bg-surface-700 border border-surface-600"
@@ -324,14 +341,14 @@ export default function ExpenseList({ expenses, onEdit, group }) {
                                 : "bg-surface-100 text-surface-600"
                             }`}
                           >
-                            {member.charAt(0).toUpperCase()}
+                            {member.name.toString().charAt(0).toUpperCase()}
                           </div>
                           <span
                             className={
                               darkMode ? "text-surface-200" : "text-surface-700"
                             }
                           >
-                            {member}
+                            {member.name}
                           </span>
                         </div>
 

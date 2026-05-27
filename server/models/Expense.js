@@ -31,9 +31,9 @@ const expenseSchema = new mongoose.Schema(
       min: [0.01, "Amount must be greater than 0"],
     },
     paidBy: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: [true, "Must specify who paid"],
-      trim: true,
     },
     payerMode: {
       type: String,
@@ -42,14 +42,16 @@ const expenseSchema = new mongoose.Schema(
     },
     paidByMultiple: [
       {
-        member: { type: String, required: true, trim: true },
+        member: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
         amount: { type: Number, required: true, min: 0.01 },
       },
     ],
-    contributors: {
-      type: [String],
-      default: [], // Empty array = split among ALL group members
-    },
+    contributors: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     groupId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Group",
@@ -75,22 +77,5 @@ const expenseSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-/**
- * Pre-save middleware:
- * Trims whitespace from paidBy and each contributor name.
- */
-expenseSchema.pre("save", function (next) {
-  this.paidBy = this.paidBy.trim();
-  this.contributors = this.contributors
-    .map((name) => name.trim())
-    .filter((name) => name.length > 0);
-  if (this.paidByMultiple && this.paidByMultiple.length > 0) {
-    this.paidByMultiple = this.paidByMultiple
-      .map((p) => ({ ...p, member: p.member.trim() }))
-      .filter((p) => p.member.length > 0);
-  }
-  next();
-});
 
 module.exports = mongoose.model("Expense", expenseSchema);

@@ -154,12 +154,15 @@ const acceptInvitation = asyncHandler(async (req, res) => {
   invitation.status = "accepted";
   await invitation.save();
 
-  // Add user to group members
-  await Group.findByIdAndUpdate(invitation.group, {
-    $push: {
-      members: { user: req.user._id, role: "member", joinedAt: new Date() },
-    },
-  });
+  // Add user to group members atomically only if they aren't already a member
+  await Group.findOneAndUpdate(
+    { _id: invitation.group, "members.user": { $ne: req.user._id } },
+    {
+      $push: {
+        members: { user: req.user._id, role: "member", joinedAt: new Date() },
+      },
+    }
+  );
 
   await invitation.populate([
     { path: "group", select: "name icon" },

@@ -8,6 +8,8 @@ const {
   getGroupById,
   updateGroup,
   deleteGroup,
+  leaveGroup,
+  removeMember,
   getGroupSettlements,
   getDashboardStats,
 } = require("../controllers/groupController");
@@ -44,6 +46,9 @@ router.route("/:id")
   .get(getGroupById)
   .put(updateGroup)
   .delete(deleteGroup);
+
+router.put("/:id/leave", leaveGroup);
+router.delete("/:id/members/:userId", removeMember);
 
 router.get("/:id/settlements", getGroupSettlements);
 

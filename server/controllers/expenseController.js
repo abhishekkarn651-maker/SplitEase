@@ -10,7 +10,7 @@ const asyncHandler = require("../utils/asyncHandler");
  * within a specific group.
  *
  * All group members can add/edit/delete expenses.
- * paidBy and contributors now store usernames.
+ * paidBy and contributors store User ObjectIds.
  */
 
 // ── Helpers ────────────────────────────────
@@ -22,8 +22,10 @@ function isGroupMember(group, userId) {
   });
 }
 
-function getMemberUsernames(group) {
-  return group.members.map((m) => m.user.username);
+function getMemberIds(group) {
+  return group.members.map((m) => {
+    return m.user._id ? m.user._id.toString() : m.user.toString();
+  });
 }
 
 // -----------------------------------------
@@ -41,7 +43,7 @@ const createExpense = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  // Find group and populate members for username validation
+  // Find group and populate members for validation
   const group = await Group.findById(groupId).populate("members.user", "name username");
   if (!group) {
     const error = new Error("Group not found");
@@ -56,7 +58,7 @@ const createExpense = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  const memberUsernames = getMemberUsernames(group);
+  const memberIds = getMemberIds(group);
 
   // --- Payer validation ---
   let finalPaidBy = paidBy;
@@ -70,12 +72,10 @@ const createExpense = asyncHandler(async (req, res) => {
     }
 
     const invalidPayers = paidByMultiple.filter(
-      (p) => !memberUsernames.includes(p.member.trim())
+      (p) => !memberIds.includes(p.member.toString())
     );
     if (invalidPayers.length > 0) {
-      const error = new Error(
-        `These payers are not group members: ${invalidPayers.map((p) => p.member).join(", ")}`
-      );
+      const error = new Error("Some payers are not members of this group");
       error.statusCode = 400;
       throw error;
     }
@@ -90,7 +90,7 @@ const createExpense = asyncHandler(async (req, res) => {
     }
 
     finalPaidByMultiple = paidByMultiple.map((p) => ({
-      member: p.member.trim(),
+      member: p.member.toString(),
       amount: p.amount,
     }));
     finalPaidBy = finalPaidByMultiple[0].member;
@@ -100,10 +100,8 @@ const createExpense = asyncHandler(async (req, res) => {
       error.statusCode = 400;
       throw error;
     }
-    if (!memberUsernames.includes(paidBy.trim())) {
-      const error = new Error(
-        `"${paidBy}" is not a member of this group. Members: ${memberUsernames.join(", ")}`
-      );
+    if (!memberIds.includes(paidBy.toString())) {
+      const error = new Error("Selected payer is not a member of this group");
       error.statusCode = 400;
       throw error;
     }
@@ -111,26 +109,24 @@ const createExpense = asyncHandler(async (req, res) => {
 
   // Validate contributors
   const finalContributors = contributors && contributors.length > 0
-    ? contributors.map((c) => c.trim()).filter((c) => c.length > 0)
+    ? contributors.map((c) => c.toString())
     : [];
 
   if (finalContributors.length > 0) {
     const invalidMembers = finalContributors.filter(
-      (c) => !memberUsernames.includes(c)
+      (c) => !memberIds.includes(c)
     );
     if (invalidMembers.length > 0) {
-      const error = new Error(
-        `These contributors are not group members: ${invalidMembers.join(", ")}`
-      );
+      const error = new Error("Some contributors are not members of this group");
       error.statusCode = 400;
       throw error;
     }
   }
 
-  const expense = await Expense.create({
+  let expense = await Expense.create({
     title: title.trim(),
     amount,
-    paidBy: finalPaidBy.trim(),
+    paidBy: finalPaidBy,
     payerMode: mode,
     paidByMultiple: finalPaidByMultiple,
     contributors: finalContributors,
@@ -139,6 +135,11 @@ const createExpense = asyncHandler(async (req, res) => {
     note: note ? note.trim() : "",
     addedBy: req.user._id,
   });
+
+  expense = await Expense.findById(expense._id)
+    .populate("paidBy", "name username email")
+    .populate("paidByMultiple.member", "name username email")
+    .populate("contributors", "name username email");
 
   res.status(201).json({ success: true, data: expense });
 });
@@ -178,7 +179,11 @@ const getExpensesByGroup = asyncHandler(async (req, res) => {
     if (req.query.endDate) filter.date.$lte = new Date(req.query.endDate);
   }
 
-  const expenses = await Expense.find(filter).sort({ date: -1 });
+  const expenses = await Expense.find(filter)
+    .populate("paidBy", "name username email")
+    .populate("paidByMultiple.member", "name username email")
+    .populate("contributors", "name username email")
+    .sort({ date: -1 });
 
   res.json({ success: true, count: expenses.length, data: expenses });
 });
@@ -188,7 +193,11 @@ const getExpensesByGroup = asyncHandler(async (req, res) => {
 // @desc    Get a single expense by ID
 // -----------------------------------------
 const getExpenseById = asyncHandler(async (req, res) => {
-  const expense = await Expense.findById(req.params.id);
+  const expense = await Expense.findById(req.params.id)
+    .populate("paidBy", "name username email")
+    .populate("paidByMultiple.member", "name username email")
+    .populate("contributors", "name username email");
+
   if (!expense) {
     const error = new Error("Expense not found");
     error.statusCode = 404;
@@ -222,19 +231,17 @@ const updateExpense = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  const memberUsernames = getMemberUsernames(group);
+  const memberIds = getMemberIds(group);
   const finalAmount = amount || expense.amount;
   const mode = payerMode || expense.payerMode || "single";
 
   if (mode === "multiple") {
     if (paidByMultiple && Array.isArray(paidByMultiple) && paidByMultiple.length > 0) {
       const invalidPayers = paidByMultiple.filter(
-        (p) => !memberUsernames.includes(p.member.trim())
+        (p) => !memberIds.includes(p.member.toString())
       );
       if (invalidPayers.length > 0) {
-        const error = new Error(
-          `These payers are not group members: ${invalidPayers.map((p) => p.member).join(", ")}`
-        );
+        const error = new Error("Some payers are not members of this group");
         error.statusCode = 400;
         throw error;
       }
@@ -242,37 +249,37 @@ const updateExpense = asyncHandler(async (req, res) => {
       const totalContributed = paidByMultiple.reduce((sum, p) => sum + p.amount, 0);
       if (Math.abs(totalContributed - finalAmount) > 0.01) {
         const error = new Error(
-          `Sum of payer contributions does not match expense amount`
+          "Sum of payer contributions does not match expense amount"
         );
         error.statusCode = 400;
         throw error;
       }
 
       expense.paidByMultiple = paidByMultiple.map((p) => ({
-        member: p.member.trim(),
+        member: p.member.toString(),
         amount: p.amount,
       }));
       expense.paidBy = expense.paidByMultiple[0].member;
     }
     expense.payerMode = "multiple";
   } else {
-    if (paidBy && !memberUsernames.includes(paidBy.trim())) {
-      const error = new Error(`"${paidBy}" is not a member of this group`);
-      error.statusCode = 400;
-      throw error;
+    if (paidBy) {
+      if (!memberIds.includes(paidBy.toString())) {
+        const error = new Error("Selected payer is not a member of this group");
+        error.statusCode = 400;
+        throw error;
+      }
+      expense.paidBy = paidBy;
     }
-    if (paidBy) expense.paidBy = paidBy.trim();
     expense.payerMode = "single";
     expense.paidByMultiple = [];
   }
 
   if (contributors && contributors.length > 0) {
-    const cleaned = contributors.map((c) => c.trim()).filter((c) => c.length > 0);
-    const invalidMembers = cleaned.filter((c) => !memberUsernames.includes(c));
+    const cleaned = contributors.map((c) => c.toString());
+    const invalidMembers = cleaned.filter((c) => !memberIds.includes(c));
     if (invalidMembers.length > 0) {
-      const error = new Error(
-        `These contributors are not group members: ${invalidMembers.join(", ")}`
-      );
+      const error = new Error("Some contributors are not members of this group");
       error.statusCode = 400;
       throw error;
     }
@@ -285,6 +292,11 @@ const updateExpense = asyncHandler(async (req, res) => {
   if (note !== undefined) expense.note = note.trim();
 
   await expense.save();
+
+  expense = await Expense.findById(expense._id)
+    .populate("paidBy", "name username email")
+    .populate("paidByMultiple.member", "name username email")
+    .populate("contributors", "name username email");
 
   res.json({ success: true, data: expense });
 });

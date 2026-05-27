@@ -159,6 +159,102 @@ const deleteGroup = asyncHandler(async (req, res) => {
 });
 
 // -----------------------------------------
+// @route   PUT /api/groups/:id/leave
+// @desc    Leave a group (any member)
+// -----------------------------------------
+const leaveGroup = asyncHandler(async (req, res) => {
+  const group = await Group.findById(req.params.id);
+  if (!group) {
+    const error = new Error("Group not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!isGroupMember(group, req.user._id)) {
+    const error = new Error("You are not a member of this group");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // If the user is the only member, delete the group instead
+  if (group.members.length === 1) {
+    await Expense.deleteMany({ groupId: req.params.id });
+    await Group.findByIdAndDelete(req.params.id);
+    return res.json({ success: true, message: "Group deleted since you were the last member." });
+  }
+
+  // If leaving user is the admin and the only admin, assign a new admin
+  const isAdminLeaving = isGroupAdmin(group, req.user._id);
+  const otherAdmins = group.members.filter(
+    (m) => getMemberId(m) !== req.user._id.toString() && m.role === "admin"
+  );
+
+  if (isAdminLeaving && otherAdmins.length === 0) {
+    const nextAdminMember = group.members.find(
+      (m) => getMemberId(m) !== req.user._id.toString()
+    );
+    if (nextAdminMember) {
+      nextAdminMember.role = "admin";
+    }
+  }
+
+  // Remove member
+  group.members = group.members.filter(
+    (m) => getMemberId(m) !== req.user._id.toString()
+  );
+
+  await group.save();
+
+  res.json({ success: true, message: "Successfully left the group" });
+});
+
+// -----------------------------------------
+// @route   DELETE /api/groups/:id/members/:userId
+// @desc    Remove a member from a group (admin only)
+// -----------------------------------------
+const removeMember = asyncHandler(async (req, res) => {
+  const { id, userId } = req.params;
+
+  const group = await Group.findById(id);
+  if (!group) {
+    const error = new Error("Group not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Verify requester is an admin of the group
+  if (!isGroupAdmin(group, req.user._id)) {
+    const error = new Error("Only group admins can remove members");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  // Can't remove yourself
+  if (userId.toString() === req.user._id.toString()) {
+    const error = new Error("You cannot remove yourself. Use the leave group option.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Check if target is a member
+  if (!isGroupMember(group, userId)) {
+    const error = new Error("Target user is not a member of this group");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Remove the member
+  group.members = group.members.filter(
+    (m) => getMemberId(m) !== userId.toString()
+  );
+
+  await group.save();
+  await group.populate("members.user", "name username email");
+
+  res.json({ success: true, message: "Member removed successfully", data: group });
+});
+
+// -----------------------------------------
 // @route   GET /api/groups/:id/settlements
 // @desc    Calculate simplified settlements for a group
 // -----------------------------------------
@@ -181,14 +277,38 @@ const getGroupSettlements = asyncHandler(async (req, res) => {
   }
 
   const expenses = await Expense.find({ groupId: req.params.id });
-  const memberUsernames = getMemberUsernames(group);
-  const balances = calculateBalances(expenses, memberUsernames);
+  const memberIds = group.members.map((m) => m.user._id.toString());
+  const balances = calculateBalances(expenses, memberIds);
   const settlements = simplifyDebts(balances);
+
+  // Translate balances and settlements from User ID keys to usernames
+  const balancesByUsername = {};
+  const idToUsername = {};
+  group.members.forEach((m) => {
+    if (m.user) {
+      idToUsername[m.user._id.toString()] = m.user.username;
+    }
+  });
+
+  for (const [id, val] of Object.entries(balances)) {
+    const uname = idToUsername[id];
+    if (uname) {
+      balancesByUsername[uname] = val;
+    }
+  }
+
+  const settlementsByUsername = settlements.map((s) => ({
+    from: idToUsername[s.from] || s.from,
+    to: idToUsername[s.to] || s.to,
+    amount: s.amount,
+  }));
 
   // Build username → name map for frontend display
   const memberMap = {};
   group.members.forEach((m) => {
-    memberMap[m.user.username] = m.user.name;
+    if (m.user) {
+      memberMap[m.user.username] = m.user.name;
+    }
   });
 
   res.json({
@@ -196,13 +316,13 @@ const getGroupSettlements = asyncHandler(async (req, res) => {
     data: {
       group: group.name,
       members: group.members.map((m) => ({
-        username: m.user.username,
-        name: m.user.name,
+        username: m.user?.username || "",
+        name: m.user?.name || "",
         role: m.role,
       })),
       memberMap,
-      balances,
-      settlements,
+      balances: balancesByUsername,
+      settlements: settlementsByUsername,
     },
   });
 });
@@ -228,6 +348,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 
   // Recent activity — last 5 expenses
   const recentExpenses = await Expense.find({ groupId: { $in: userGroupIds } })
+    .populate("paidBy", "name username")
     .sort({ createdAt: -1 })
     .limit(5)
     .lean();
@@ -239,6 +360,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 
   const recentActivity = recentExpenses.map((exp) => ({
     ...exp,
+    paidBy: exp.paidBy?.name || exp.paidBy || "Unknown",
     groupName: groupMap[exp.groupId.toString()] || "Unknown Group",
   }));
 
@@ -248,8 +370,8 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     const groupExpenses = expenses.filter(
       (e) => e.groupId.toString() === group._id.toString()
     );
-    const memberUsernames = group.members.map((m) => m.user.username);
-    const balances = calculateBalances(groupExpenses, memberUsernames);
+    const memberIds = group.members.map((m) => m.user._id.toString());
+    const balances = calculateBalances(groupExpenses, memberIds);
     const settlements = simplifyDebts(balances);
     totalPendingBalance += settlements.reduce((sum, s) => sum + s.amount, 0);
   }
@@ -290,9 +412,15 @@ function calculateBalances(expenses, members) {
   for (const expense of expenses) {
     const { amount, paidBy, paidByMultiple, payerMode, contributors } = expense;
 
+    // Get string IDs for paidBy and contributors (whether populated or raw ObjectIds)
+    const paidById = paidBy?._id ? paidBy._id.toString() : paidBy?.toString();
+    const contributorIds = (contributors || []).map((c) =>
+      c?._id ? c._id.toString() : c?.toString()
+    );
+
     // If no specific contributors, everyone in the group shares
     const splitAmong =
-      contributors.length > 0 ? contributors : members;
+      contributorIds.length > 0 ? contributorIds : members;
 
     // Each person's share of this expense
     const sharePerPerson = amount / splitAmong.length;
@@ -300,13 +428,14 @@ function calculateBalances(expenses, members) {
     // Credit the payer(s)
     if (payerMode === "multiple" && paidByMultiple && paidByMultiple.length > 0) {
       for (const p of paidByMultiple) {
-        if (balances[p.member] !== undefined) {
-          balances[p.member] += p.amount;
+        const payerId = p.member?._id ? p.member._id.toString() : p.member?.toString();
+        if (balances[payerId] !== undefined) {
+          balances[payerId] += p.amount;
         }
       }
     } else {
-      if (balances[paidBy] !== undefined) {
-        balances[paidBy] += amount;
+      if (balances[paidById] !== undefined) {
+        balances[paidById] += amount;
       }
     }
 
@@ -332,7 +461,7 @@ function calculateBalances(expenses, members) {
  * Takes the net balances and produces the minimum number of transactions
  * needed to settle all debts using a greedy approach.
  *
- * @param {Object} balances - { username: netBalance }
+ * @param {Object} balances - { userId: netBalance }
  * @returns {Array} - [{ from, to, amount }, ...]
  */
 function simplifyDebts(balances) {
@@ -379,6 +508,8 @@ module.exports = {
   getGroupById,
   updateGroup,
   deleteGroup,
+  leaveGroup,
+  removeMember,
   getGroupSettlements,
   getDashboardStats,
   // Export helpers for testing

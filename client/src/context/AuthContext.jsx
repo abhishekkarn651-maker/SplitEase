@@ -99,6 +99,23 @@ export function AuthProvider({ children }) {
     toast.success("Logged out");
   }, []);
 
+  /**
+   * updateProfile — Update authenticated user profile details
+   */
+  const updateProfile = useCallback(async (profileData) => {
+    try {
+      const { data } = await api.updateProfile(profileData);
+      const updatedUser = data.data;
+      setUser(updatedUser);
+      toast.success("Profile updated successfully!");
+      return updatedUser;
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to update profile";
+      toast.error(msg);
+      throw err;
+    }
+  }, []);
+
   const value = {
     user,
     token,
@@ -107,6 +124,7 @@ export function AuthProvider({ children }) {
     signup,
     login,
     logout,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

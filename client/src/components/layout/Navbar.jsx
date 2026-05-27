@@ -251,27 +251,30 @@ export default function Navbar() {
               )}
             </button>
 
-            {/* User avatar + name */}
+            {/* User avatar + name link to Profile */}
             {user && (
-              <div className="flex items-center gap-2 ml-1">
+              <Link
+                to="/profile"
+                className={`flex items-center gap-2 ml-1 px-2.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                  darkMode
+                    ? "hover:bg-surface-800 text-surface-300 hover:text-white"
+                    : "hover:bg-surface-100 text-surface-600 hover:text-surface-800"
+                }`}
+                title="View Profile"
+              >
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
                     darkMode
                       ? "bg-primary-900/40 text-primary-400"
                       : "bg-primary-100 text-primary-700"
                   }`}
-                  title={`${user.name} (@${user.username || ""})`}
                 >
                   {user.name.charAt(0).toUpperCase()}
                 </div>
-                <span
-                  className={`hidden md:inline text-sm font-medium ${
-                    darkMode ? "text-surface-300" : "text-surface-600"
-                  }`}
-                >
+                <span className="hidden md:inline text-sm font-medium">
                   {user.name}
                 </span>
-              </div>
+              </Link>
             )}
 
             {/* Logout */}

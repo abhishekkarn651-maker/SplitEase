@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../../context/AppContext";
+import { useAuth } from "../../context/AuthContext";
 import { HiOutlineEye, HiOutlinePlus, HiOutlineXMark } from "react-icons/hi2";
 
 /**
@@ -13,10 +14,18 @@ import { HiOutlineEye, HiOutlinePlus, HiOutlineXMark } from "react-icons/hi2";
  */
 export default function ExpenseForm({ group, onClose, editingExpense }) {
   const { addExpense, editExpense, darkMode } = useApp();
+  const { user } = useAuth();
+
+  const myMember = (group.members || []).find(
+    (m) => (m.user?._id || m.user) === user?._id
+  );
+  const isMeAdmin = myMember?.role === "admin";
 
   const [title, setTitle] = useState(editingExpense?.title || "");
   const [amount, setAmount] = useState(editingExpense?.amount || "");
-  const [paidBy, setPaidBy] = useState(editingExpense?.paidBy || "");
+  const [paidBy, setPaidBy] = useState(
+    editingExpense?.paidBy?._id || editingExpense?.paidBy || (!isMeAdmin && user?._id ? user._id : "")
+  );
   const [date, setDate] = useState(
     editingExpense?.date
       ? new Date(editingExpense.date).toISOString().split("T")[0]
@@ -25,17 +34,22 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
   const [note, setNote] = useState(editingExpense?.note || "");
   // Derive a flat list of member info from the new group.members structure
   const memberList = (group.members || []).map((m) => ({
+    id: m.user?._id || m.user,
     username: m.user?.username || m.user,
     name: m.user?.name || m.user?.username || m.user,
   }));
-  const memberUsernames = memberList.map((m) => m.username);
+  const memberIds = memberList.map((m) => m.id);
   const memberNameMap = {};
-  memberList.forEach((m) => { memberNameMap[m.username] = m.name; });
+  const memberUsernameMap = {};
+  memberList.forEach((m) => {
+    memberNameMap[m.id] = m.name;
+    memberUsernameMap[m.id] = m.username;
+  });
 
   const [contributors, setContributors] = useState(
     editingExpense?.contributors?.length > 0
-      ? editingExpense.contributors
-      : [...memberUsernames] // Default: everyone
+      ? editingExpense.contributors.map((c) => c?._id || c)
+      : [...memberIds] // Default: everyone
   );
   const [submitting, setSubmitting] = useState(false);
 
@@ -49,7 +63,7 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
       editingExpense?.paidByMultiple?.length > 0
     ) {
       return editingExpense.paidByMultiple.map((p) => ({
-        member: p.member,
+        member: p.member?._id || p.member,
         amount: p.amount,
       }));
     }
@@ -65,7 +79,7 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
         paidByMultiple.length <= 1 &&
         (!paidByMultiple[0]?.member || !paidByMultiple[0]?.amount)
       ) {
-        const firstTwo = memberUsernames.slice(0, 2);
+        const firstTwo = memberIds.slice(0, 2);
         const perPayer = Math.round((parsedAmount / firstTwo.length) * 100) / 100;
         setPaidByMultiple(
           firstTwo.map((m) => ({ member: m, amount: perPayer }))
@@ -125,16 +139,16 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
 
   // Select/deselect all members
   const toggleAll = () => {
-    if (contributors.length === memberUsernames.length) {
+    if (contributors.length === memberIds.length) {
       setContributors([]);
     } else {
-      setContributors([...memberUsernames]);
+      setContributors([...memberIds]);
     }
   };
 
   // ── Calculations ──
   const parsedAmount = parseFloat(amount) || 0;
-  const splitAmong = contributors.length > 0 ? contributors : memberUsernames;
+  const splitAmong = contributors.length > 0 ? contributors : memberIds;
   const perPersonShare =
     splitAmong.length > 0 ? parsedAmount / splitAmong.length : 0;
 
@@ -336,7 +350,7 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
               >
                 <option value="">Select who paid</option>
                 {memberList.map((m) => (
-                  <option key={m.username} value={m.username}>
+                  <option key={m.id} value={m.id}>
                     {m.name} (@{m.username})
                   </option>
                 ))}
@@ -367,10 +381,10 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
                       {memberList
                         .filter(
                           (m) =>
-                            m.username === payer.member || !selectedPayers.includes(m.username)
+                            m.id === payer.member || !selectedPayers.includes(m.id)
                         )
                         .map((m) => (
-                          <option key={m.username} value={m.username}>
+                          <option key={m.id} value={m.id}>
                             {m.name} (@{m.username})
                           </option>
                         ))}
@@ -413,7 +427,7 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
 
                 {/* Add Payer + Auto-fill buttons */}
                 <div className="flex gap-2">
-                  {paidByMultiple.length < memberUsernames.length && (
+                  {paidByMultiple.length < memberIds.length && (
                     <button
                       type="button"
                       onClick={addPayerRow}
@@ -531,7 +545,7 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
                 onClick={toggleAll}
                 className="text-xs text-primary-500 hover:text-primary-600 font-medium cursor-pointer"
               >
-                {contributors.length === memberUsernames.length
+                {contributors.length === memberIds.length
                   ? "Deselect All"
                   : "Select All"}
               </button>
@@ -539,9 +553,9 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
             <div className="grid grid-cols-2 gap-2">
               {memberList.map((m) => (
                 <label
-                  key={m.username}
+                  key={m.id}
                   className={`flex items-center gap-2 p-2.5 rounded-xl cursor-pointer transition-all text-sm ${
-                    contributors.includes(m.username)
+                    contributors.includes(m.id)
                       ? darkMode
                         ? "bg-primary-900/30 border border-primary-700 text-primary-400"
                         : "bg-primary-50 border border-primary-200 text-primary-700"
@@ -552,8 +566,8 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
                 >
                   <input
                     type="checkbox"
-                    checked={contributors.includes(m.username)}
-                    onChange={() => toggleContributor(m.username)}
+                    checked={contributors.includes(m.id)}
+                    onChange={() => toggleContributor(m.id)}
                     className="accent-primary-500 w-4 h-4"
                   />
                   {m.name} <span className="opacity-50">@{m.username}</span>
@@ -610,7 +624,7 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
                       darkMode ? "text-surface-200" : "text-surface-700"
                     }`}
                   >
-                    <span className="font-semibold">{paidBy}</span> paid{" "}
+                    <span className="font-semibold">{memberNameMap[paidBy] || paidBy}</span> paid{" "}
                     <span className="font-semibold">₹{parsedAmount.toLocaleString()}</span>
                   </p>
                   <p
@@ -629,7 +643,7 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
                         }`}
                       >
                         <span>
-                          {person === paidBy ? `${person} (payer)` : person}
+                          {person === paidBy ? `${memberNameMap[person] || person} (payer)` : (memberNameMap[person] || person)}
                         </span>
                         <span className="font-medium">
                           {person === paidBy
@@ -669,7 +683,7 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
                           darkMode ? "text-surface-200" : "text-surface-700"
                         }`}
                       >
-                        <span className="font-semibold">{p.member}</span> paid{" "}
+                        <span className="font-semibold">{memberNameMap[p.member] || p.member}</span> paid{" "}
                         <span className="font-semibold">
                           ₹{parseFloat(p.amount).toLocaleString()}
                         </span>
@@ -704,8 +718,8 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
                         >
                           <span>
                             {payerEntry
-                              ? `${person} (paid ₹${personPaid.toLocaleString()})`
-                              : person}
+                              ? `${memberNameMap[person] || person} (paid ₹${personPaid.toLocaleString()})`
+                              : (memberNameMap[person] || person)}
                           </span>
                           <span
                             className={`font-medium ${
