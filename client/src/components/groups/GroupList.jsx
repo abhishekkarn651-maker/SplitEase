@@ -144,19 +144,23 @@ export default function GroupList() {
 
               {/* Member avatars (first letters) */}
               <div className="flex items-center mt-4 -space-x-2">
-                {group.members.slice(0, 5).map((member, i) => (
+                {group.members.slice(0, 5).map((member, i) => {
+                const memberUser = member.user || {};
+                const displayName = memberUser.name || memberUser.username || "?";
+                return (
                   <div
-                    key={i}
+                    key={memberUser._id || i}
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2 ${
                       darkMode
                         ? "border-surface-800 bg-surface-700 text-surface-300"
                         : "border-white bg-surface-100 text-surface-600"
                     }`}
-                    title={member}
+                    title={displayName}
                   >
-                    {member.charAt(0).toUpperCase()}
+                    {displayName.charAt(0).toUpperCase()}
                   </div>
-                ))}
+                );
+              })}
                 {group.members.length > 5 && (
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2 ${

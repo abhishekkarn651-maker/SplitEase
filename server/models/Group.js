@@ -3,12 +3,11 @@ const mongoose = require("mongoose");
 /**
  * Group Schema
  * ------------
- * Represents a group of friends who share expenses.
+ * Represents a group of users who share expenses.
  *
- * Fields:
- *  - name:    The group name (e.g., "Goa Trip 2026")
- *  - members: An array of member names (strings). Since there's no auth,
- *             members are simply stored as name strings.
+ * Members are now real user references with roles:
+ *  - admin:  The group creator (can invite, edit, delete)
+ *  - member: Invited users who accepted (can add/manage expenses)
  *
  * Timestamps adds createdAt and updatedAt automatically.
  */
@@ -41,16 +40,24 @@ const groupSchema = new mongoose.Schema(
       default: "👥",
       maxlength: [10, "Icon cannot exceed 10 characters"],
     },
-    members: {
-      type: [String],
-      validate: {
-        validator: function (arr) {
-          // A group must have at least 2 members to split expenses
-          return arr.length >= 2;
+    members: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
         },
-        message: "A group must have at least 2 members",
+        role: {
+          type: String,
+          enum: ["admin", "member"],
+          default: "member",
+        },
+        joinedAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
-    },
+    ],
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -59,20 +66,8 @@ const groupSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // Adds createdAt & updatedAt fields
+    timestamps: true,
   }
 );
-
-/**
- * Pre-save middleware:
- * Trims whitespace from each member name and removes any empty strings.
- * This keeps our data clean regardless of how the frontend sends it.
- */
-groupSchema.pre("save", function (next) {
-  this.members = this.members
-    .map((member) => member.trim())
-    .filter((member) => member.length > 0);
-  next();
-});
 
 module.exports = mongoose.model("Group", groupSchema);

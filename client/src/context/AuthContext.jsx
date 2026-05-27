@@ -52,9 +52,9 @@ export function AuthProvider({ children }) {
   /**
    * signup — Register a new user
    */
-  const signup = useCallback(async (name, email, password) => {
+  const signup = useCallback(async (name, username, email, password) => {
     try {
-      const { data } = await api.signupUser({ name, email, password });
+      const { data } = await api.signupUser({ name, username, email, password });
       const { token: newToken, user: newUser } = data.data;
 
       localStorage.setItem("splitease-token", newToken);

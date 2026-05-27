@@ -38,43 +38,13 @@ export default function CreateGroup() {
   const [description, setDescription] = useState("");
   const [currency, setCurrency] = useState("INR");
   const [category, setCategory] = useState("other");
-  const [memberInput, setMemberInput] = useState("");
-  const [members, setMembers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-
-  // Add a member to the list
-  const handleAddMember = () => {
-    const trimmed = memberInput.trim();
-    if (!trimmed) return;
-
-    // Check for duplicates (case-insensitive)
-    if (members.some((m) => m.toLowerCase() === trimmed.toLowerCase())) {
-      return;
-    }
-
-    setMembers([...members, trimmed]);
-    setMemberInput("");
-  };
-
-  // Handle Enter key in member input
-  const handleMemberKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddMember();
-    }
-  };
-
-  // Remove a member
-  const removeMember = (index) => {
-    setMembers(members.filter((_, i) => i !== index));
-  };
 
   // Submit the form
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!name.trim()) return;
-    if (members.length < 2) return;
 
     setSubmitting(true);
     try {
@@ -84,7 +54,6 @@ export default function CreateGroup() {
         currency,
         category,
         icon,
-        members,
       });
       navigate(`/groups/${group._id}`);
     } catch {
@@ -246,74 +215,17 @@ export default function CreateGroup() {
           </select>
         </div>
 
-        {/* Add Members */}
-        <div>
-          <label
-            className={`block text-sm font-medium mb-1.5 ${
-              darkMode ? "text-surface-300" : "text-surface-600"
-            }`}
-          >
-            Add Members{" "}
-            <span className={darkMode ? "text-surface-500" : "text-surface-400"}>
-              ({members.length} added)
-            </span>
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={memberInput}
-              onChange={(e) => setMemberInput(e.target.value)}
-              onKeyDown={handleMemberKeyDown}
-              placeholder="Type a name and press Enter"
-              className={inputClasses}
-            />
-            <button
-              type="button"
-              onClick={handleAddMember}
-              disabled={!memberInput.trim()}
-              className="px-4 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
-            >
-              <HiOutlinePlus className="w-5 h-5" />
-            </button>
-          </div>
+        {/* Info about inviting members */}
+        <div className={`rounded-xl p-3 text-sm ${
+          darkMode ? "bg-surface-700/50 text-surface-400" : "bg-surface-50 text-surface-500"
+        }`}>
+          💡 You'll be added as admin. Invite members after creating the group.
         </div>
-
-        {/* Member Tags */}
-        {members.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {members.map((member, index) => (
-              <span
-                key={index}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium animate-scale-in ${
-                  darkMode
-                    ? "bg-primary-900/30 text-primary-400"
-                    : "bg-primary-50 text-primary-700"
-                }`}
-              >
-                {member}
-                <button
-                  type="button"
-                  onClick={() => removeMember(index)}
-                  className="hover:text-red-500 transition-colors cursor-pointer"
-                >
-                  <HiOutlineXMark className="w-4 h-4" />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Validation hint */}
-        {members.length > 0 && members.length < 2 && (
-          <p className="text-xs text-amber-500">
-            Add at least 2 members to create a group
-          </p>
-        )}
 
         {/* Submit */}
         <button
           type="submit"
-          disabled={!name.trim() || members.length < 2 || submitting}
+          disabled={!name.trim() || submitting}
           className="w-full py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         >
           {submitting ? "Creating..." : "Create Group"}
@@ -322,3 +234,4 @@ export default function CreateGroup() {
     </div>
   );
 }
+

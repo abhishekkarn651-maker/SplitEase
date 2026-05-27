@@ -112,4 +112,23 @@ export const updateExpense = (id, data) => API.put(`/expenses/${id}`, data);
 /** Delete an expense */
 export const deleteExpense = (id) => API.delete(`/expenses/${id}`);
 
+// ========================================
+// INVITATION API CALLS
+// ========================================
+
+/** Send an invitation to a user by username */
+export const sendInvitation = (data) => API.post("/invitations", data);
+
+/** Get all pending invitations for current user */
+export const fetchPendingInvitations = () => API.get("/invitations/pending");
+
+/** Get count of pending invitations (for notification badge) */
+export const fetchPendingCount = () => API.get("/invitations/pending/count");
+
+/** Accept a pending invitation */
+export const acceptInvitation = (id) => API.put(`/invitations/${id}/accept`);
+
+/** Decline a pending invitation */
+export const declineInvitation = (id) => API.put(`/invitations/${id}/decline`);
+
 export default API;

@@ -27,19 +27,27 @@ const generateToken = (id) => {
 // @access  Public
 // -----------------------------------------
 const signup = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, username, email, password } = req.body;
 
   // Validate required fields
-  if (!name || !email || !password) {
-    const error = new Error("Please provide name, email, and password");
+  if (!name || !username || !email || !password) {
+    const error = new Error("Please provide name, username, email, and password");
     error.statusCode = 400;
     throw error;
   }
 
-  // Check if user already exists
-  const existingUser = await User.findOne({ email: email.toLowerCase() });
-  if (existingUser) {
+  // Check if email already exists
+  const existingEmail = await User.findOne({ email: email.toLowerCase() });
+  if (existingEmail) {
     const error = new Error("An account with this email already exists");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Check if username already exists
+  const existingUsername = await User.findOne({ username: username.toLowerCase() });
+  if (existingUsername) {
+    const error = new Error("This username is already taken");
     error.statusCode = 400;
     throw error;
   }
@@ -47,6 +55,7 @@ const signup = asyncHandler(async (req, res) => {
   // Create the user
   const user = await User.create({
     name: name.trim(),
+    username: username.toLowerCase().trim(),
     email: email.toLowerCase().trim(),
     password,
   });
@@ -61,6 +70,7 @@ const signup = asyncHandler(async (req, res) => {
       user: {
         _id: user._id,
         name: user.name,
+        username: user.username,
         email: user.email,
       },
     },
@@ -112,6 +122,7 @@ const login = asyncHandler(async (req, res) => {
       user: {
         _id: user._id,
         name: user.name,
+        username: user.username,
         email: user.email,
       },
     },
@@ -130,6 +141,7 @@ const getMe = asyncHandler(async (req, res) => {
     data: {
       _id: req.user._id,
       name: req.user.name,
+      username: req.user.username,
       email: req.user.email,
     },
   });

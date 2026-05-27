@@ -8,7 +8,23 @@ const asyncHandler = require("../utils/asyncHandler");
  * ========================================
  * Handles all CRUD operations for expenses
  * within a specific group.
+ *
+ * All group members can add/edit/delete expenses.
+ * paidBy and contributors now store usernames.
  */
+
+// ── Helpers ────────────────────────────────
+
+function isGroupMember(group, userId) {
+  return group.members.some((m) => {
+    const id = m.user._id ? m.user._id.toString() : m.user.toString();
+    return id === userId.toString();
+  });
+}
+
+function getMemberUsernames(group) {
+  return group.members.map((m) => m.user.username);
+}
 
 // -----------------------------------------
 // @route   POST /api/expenses
@@ -19,38 +35,42 @@ const createExpense = asyncHandler(async (req, res) => {
 
   const mode = payerMode || "single";
 
-  // --- Validation ---
   if (!title || !amount || !groupId) {
-    const error = new Error(
-      "Please provide title, amount, and groupId"
-    );
+    const error = new Error("Please provide title, amount, and groupId");
     error.statusCode = 400;
     throw error;
   }
 
-  // Make sure the group exists
-  const group = await Group.findById(groupId);
+  // Find group and populate members for username validation
+  const group = await Group.findById(groupId).populate("members.user", "name username");
   if (!group) {
     const error = new Error("Group not found");
     error.statusCode = 404;
     throw error;
   }
 
+  // Verify the requester is a group member
+  if (!isGroupMember(group, req.user._id)) {
+    const error = new Error("You must be a group member to add expenses");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const memberUsernames = getMemberUsernames(group);
+
   // --- Payer validation ---
   let finalPaidBy = paidBy;
   let finalPaidByMultiple = [];
 
   if (mode === "multiple") {
-    // Multi-payer mode
     if (!paidByMultiple || !Array.isArray(paidByMultiple) || paidByMultiple.length === 0) {
       const error = new Error("Multiple payer mode requires at least one payer in paidByMultiple");
       error.statusCode = 400;
       throw error;
     }
 
-    // Validate all payers are group members
     const invalidPayers = paidByMultiple.filter(
-      (p) => !group.members.includes(p.member.trim())
+      (p) => !memberUsernames.includes(p.member.trim())
     );
     if (invalidPayers.length > 0) {
       const error = new Error(
@@ -60,11 +80,10 @@ const createExpense = asyncHandler(async (req, res) => {
       throw error;
     }
 
-    // Validate sum of contributions equals total amount (within tolerance)
     const totalContributed = paidByMultiple.reduce((sum, p) => sum + p.amount, 0);
     if (Math.abs(totalContributed - amount) > 0.01) {
       const error = new Error(
-        `Sum of payer contributions (₹${totalContributed.toFixed(2)}) does not match expense amount (₹${amount.toFixed(2)})`
+        `Sum of payer contributions (${totalContributed.toFixed(2)}) does not match expense amount (${amount.toFixed(2)})`
       );
       error.statusCode = 400;
       throw error;
@@ -74,32 +93,30 @@ const createExpense = asyncHandler(async (req, res) => {
       member: p.member.trim(),
       amount: p.amount,
     }));
-    // Set paidBy to the first contributor for backward compat / display
     finalPaidBy = finalPaidByMultiple[0].member;
   } else {
-    // Single-payer mode
     if (!paidBy) {
       const error = new Error("Please specify who paid");
       error.statusCode = 400;
       throw error;
     }
-    if (!group.members.includes(paidBy.trim())) {
+    if (!memberUsernames.includes(paidBy.trim())) {
       const error = new Error(
-        `"${paidBy}" is not a member of this group. Members: ${group.members.join(", ")}`
+        `"${paidBy}" is not a member of this group. Members: ${memberUsernames.join(", ")}`
       );
       error.statusCode = 400;
       throw error;
     }
   }
 
-  // If contributors are specified, validate they are all group members
+  // Validate contributors
   const finalContributors = contributors && contributors.length > 0
     ? contributors.map((c) => c.trim()).filter((c) => c.length > 0)
-    : []; // Empty = everyone shares
+    : [];
 
   if (finalContributors.length > 0) {
     const invalidMembers = finalContributors.filter(
-      (c) => !group.members.includes(c)
+      (c) => !memberUsernames.includes(c)
     );
     if (invalidMembers.length > 0) {
       const error = new Error(
@@ -110,7 +127,6 @@ const createExpense = asyncHandler(async (req, res) => {
     }
   }
 
-  // Create the expense
   const expense = await Expense.create({
     title: title.trim(),
     amount,
@@ -121,23 +137,19 @@ const createExpense = asyncHandler(async (req, res) => {
     groupId,
     date: date || Date.now(),
     note: note ? note.trim() : "",
+    addedBy: req.user._id,
   });
 
-  res.status(201).json({
-    success: true,
-    data: expense,
-  });
+  res.status(201).json({ success: true, data: expense });
 });
 
 // -----------------------------------------
 // @route   GET /api/expenses/group/:groupId
 // @desc    Get all expenses for a specific group
-//          Supports search and filter via query params
 // -----------------------------------------
 const getExpensesByGroup = asyncHandler(async (req, res) => {
   const { groupId } = req.params;
 
-  // Make sure the group exists
   const group = await Group.findById(groupId);
   if (!group) {
     const error = new Error("Group not found");
@@ -145,38 +157,30 @@ const getExpensesByGroup = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  // Build the query filter
+  // Verify membership
+  if (!isGroupMember(group, req.user._id)) {
+    const error = new Error("You must be a group member to view expenses");
+    error.statusCode = 403;
+    throw error;
+  }
+
   const filter = { groupId };
 
-  // --- Search by title (case-insensitive partial match) ---
   if (req.query.search) {
     filter.title = { $regex: req.query.search, $options: "i" };
   }
-
-  // --- Filter by payer ---
   if (req.query.paidBy) {
     filter.paidBy = req.query.paidBy;
   }
-
-  // --- Filter by date range ---
   if (req.query.startDate || req.query.endDate) {
     filter.date = {};
-    if (req.query.startDate) {
-      filter.date.$gte = new Date(req.query.startDate);
-    }
-    if (req.query.endDate) {
-      filter.date.$lte = new Date(req.query.endDate);
-    }
+    if (req.query.startDate) filter.date.$gte = new Date(req.query.startDate);
+    if (req.query.endDate) filter.date.$lte = new Date(req.query.endDate);
   }
 
-  // Fetch expenses, newest first
   const expenses = await Expense.find(filter).sort({ date: -1 });
 
-  res.json({
-    success: true,
-    count: expenses.length,
-    data: expenses,
-  });
+  res.json({ success: true, count: expenses.length, data: expenses });
 });
 
 // -----------------------------------------
@@ -185,17 +189,13 @@ const getExpensesByGroup = asyncHandler(async (req, res) => {
 // -----------------------------------------
 const getExpenseById = asyncHandler(async (req, res) => {
   const expense = await Expense.findById(req.params.id);
-
   if (!expense) {
     const error = new Error("Expense not found");
     error.statusCode = 404;
     throw error;
   }
 
-  res.json({
-    success: true,
-    data: expense,
-  });
+  res.json({ success: true, data: expense });
 });
 
 // -----------------------------------------
@@ -206,25 +206,30 @@ const updateExpense = asyncHandler(async (req, res) => {
   const { title, amount, paidBy, paidByMultiple, payerMode, contributors, date, note } = req.body;
 
   let expense = await Expense.findById(req.params.id);
-
   if (!expense) {
     const error = new Error("Expense not found");
     error.statusCode = 404;
     throw error;
   }
 
-  // Fetch the parent group to validate members
-  const group = await Group.findById(expense.groupId);
-  const finalAmount = amount || expense.amount;
+  // Populate group members for validation
+  const group = await Group.findById(expense.groupId).populate("members.user", "name username");
 
-  // Handle payer mode update
+  // Verify membership
+  if (!isGroupMember(group, req.user._id)) {
+    const error = new Error("You must be a group member to edit expenses");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const memberUsernames = getMemberUsernames(group);
+  const finalAmount = amount || expense.amount;
   const mode = payerMode || expense.payerMode || "single";
 
   if (mode === "multiple") {
     if (paidByMultiple && Array.isArray(paidByMultiple) && paidByMultiple.length > 0) {
-      // Validate all payers are group members
       const invalidPayers = paidByMultiple.filter(
-        (p) => !group.members.includes(p.member.trim())
+        (p) => !memberUsernames.includes(p.member.trim())
       );
       if (invalidPayers.length > 0) {
         const error = new Error(
@@ -234,11 +239,10 @@ const updateExpense = asyncHandler(async (req, res) => {
         throw error;
       }
 
-      // Validate sum matches total
       const totalContributed = paidByMultiple.reduce((sum, p) => sum + p.amount, 0);
       if (Math.abs(totalContributed - finalAmount) > 0.01) {
         const error = new Error(
-          `Sum of payer contributions (₹${totalContributed.toFixed(2)}) does not match expense amount (₹${finalAmount.toFixed(2)})`
+          `Sum of payer contributions does not match expense amount`
         );
         error.statusCode = 400;
         throw error;
@@ -252,8 +256,7 @@ const updateExpense = asyncHandler(async (req, res) => {
     }
     expense.payerMode = "multiple";
   } else {
-    // Single-payer mode
-    if (paidBy && !group.members.includes(paidBy.trim())) {
+    if (paidBy && !memberUsernames.includes(paidBy.trim())) {
       const error = new Error(`"${paidBy}" is not a member of this group`);
       error.statusCode = 400;
       throw error;
@@ -263,10 +266,9 @@ const updateExpense = asyncHandler(async (req, res) => {
     expense.paidByMultiple = [];
   }
 
-  // Validate contributors if being updated
   if (contributors && contributors.length > 0) {
     const cleaned = contributors.map((c) => c.trim()).filter((c) => c.length > 0);
-    const invalidMembers = cleaned.filter((c) => !group.members.includes(c));
+    const invalidMembers = cleaned.filter((c) => !memberUsernames.includes(c));
     if (invalidMembers.length > 0) {
       const error = new Error(
         `These contributors are not group members: ${invalidMembers.join(", ")}`
@@ -277,7 +279,6 @@ const updateExpense = asyncHandler(async (req, res) => {
     expense.contributors = cleaned;
   }
 
-  // Update fields if provided
   if (title) expense.title = title.trim();
   if (amount) expense.amount = amount;
   if (date) expense.date = date;
@@ -285,10 +286,7 @@ const updateExpense = asyncHandler(async (req, res) => {
 
   await expense.save();
 
-  res.json({
-    success: true,
-    data: expense,
-  });
+  res.json({ success: true, data: expense });
 });
 
 // -----------------------------------------
@@ -297,19 +295,23 @@ const updateExpense = asyncHandler(async (req, res) => {
 // -----------------------------------------
 const deleteExpense = asyncHandler(async (req, res) => {
   const expense = await Expense.findById(req.params.id);
-
   if (!expense) {
     const error = new Error("Expense not found");
     error.statusCode = 404;
     throw error;
   }
 
+  // Verify membership
+  const group = await Group.findById(expense.groupId);
+  if (group && !isGroupMember(group, req.user._id)) {
+    const error = new Error("You must be a group member to delete expenses");
+    error.statusCode = 403;
+    throw error;
+  }
+
   await Expense.findByIdAndDelete(req.params.id);
 
-  res.json({
-    success: true,
-    message: "Expense deleted successfully",
-  });
+  res.json({ success: true, message: "Expense deleted successfully" });
 });
 
 module.exports = {

@@ -20,6 +20,8 @@ const initialState = {
   expenses: [],
   settlements: null,
   dashboardStats: null,
+  pendingInvitations: [],
+  pendingCount: 0,
   loading: false,
   darkMode: localStorage.getItem("splitease-dark") === "true",
 };
@@ -38,6 +40,8 @@ const ACTIONS = {
   REMOVE_EXPENSE: "REMOVE_EXPENSE",
   SET_SETTLEMENTS: "SET_SETTLEMENTS",
   SET_DASHBOARD_STATS: "SET_DASHBOARD_STATS",
+  SET_PENDING_INVITATIONS: "SET_PENDING_INVITATIONS",
+  SET_PENDING_COUNT: "SET_PENDING_COUNT",
   TOGGLE_DARK_MODE: "TOGGLE_DARK_MODE",
 };
 
@@ -103,6 +107,12 @@ function appReducer(state, action) {
 
     case ACTIONS.SET_DASHBOARD_STATS:
       return { ...state, dashboardStats: action.payload };
+
+    case ACTIONS.SET_PENDING_INVITATIONS:
+      return { ...state, pendingInvitations: action.payload };
+
+    case ACTIONS.SET_PENDING_COUNT:
+      return { ...state, pendingCount: action.payload };
 
     case ACTIONS.TOGGLE_DARK_MODE:
       return { ...state, darkMode: !state.darkMode };
@@ -263,6 +273,62 @@ export function AppProvider({ children }) {
     }
   }, []);
 
+  // ── Invitation Actions ──
+
+  const loadPendingInvitations = useCallback(async () => {
+    try {
+      const { data } = await api.fetchPendingInvitations();
+      dispatch({ type: ACTIONS.SET_PENDING_INVITATIONS, payload: data.data });
+      dispatch({ type: ACTIONS.SET_PENDING_COUNT, payload: data.count });
+    } catch (err) {
+      // Silently fail — notification polling shouldn't show errors
+    }
+  }, []);
+
+  const loadPendingCount = useCallback(async () => {
+    try {
+      const { data } = await api.fetchPendingCount();
+      dispatch({ type: ACTIONS.SET_PENDING_COUNT, payload: data.data.count });
+    } catch {
+      // Silently fail
+    }
+  }, []);
+
+  const sendInvite = useCallback(async (groupId, username) => {
+    try {
+      const { data } = await api.sendInvitation({ groupId, username });
+      toast.success(`Invitation sent to @${username}`);
+      return data.data;
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to send invitation");
+      throw err;
+    }
+  }, []);
+
+  const acceptInvite = useCallback(async (invitationId) => {
+    try {
+      const { data } = await api.acceptInvitation(invitationId);
+      toast.success(`Joined group "${data.data.group.name}"!`);
+      // Refresh invitations and groups
+      dispatch({ type: ACTIONS.SET_PENDING_COUNT, payload: Math.max(0, state.pendingCount - 1) });
+      return data.data;
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to accept invitation");
+      throw err;
+    }
+  }, [state.pendingCount]);
+
+  const declineInvite = useCallback(async (invitationId) => {
+    try {
+      await api.declineInvitation(invitationId);
+      toast.success("Invitation declined");
+      dispatch({ type: ACTIONS.SET_PENDING_COUNT, payload: Math.max(0, state.pendingCount - 1) });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to decline invitation");
+      throw err;
+    }
+  }, [state.pendingCount]);
+
   // ── Context Value ──
   const value = {
     ...state,
@@ -278,6 +344,12 @@ export function AppProvider({ children }) {
     removeExpense,
     loadSettlements,
     loadDashboardStats,
+    // Invitation actions
+    loadPendingInvitations,
+    loadPendingCount,
+    sendInvite,
+    acceptInvite,
+    declineInvite,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

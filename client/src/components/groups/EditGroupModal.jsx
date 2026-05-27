@@ -1,17 +1,12 @@
 import { useState } from "react";
 import { useApp } from "../../context/AppContext";
-import { HiOutlineXMark, HiOutlinePlus } from "react-icons/hi2";
+import { HiOutlineXMark } from "react-icons/hi2";
 
 /**
  * EditGroupModal — Modal form to edit an existing group.
  *
- * Allows editing:
- *  - Group icon (emoji picker)
- *  - Group name
- *  - Description
- *  - Currency
- *  - Category
- *  - Members (add / remove with confirmation)
+ * Allows editing metadata only (name, description, currency, category, icon).
+ * Member management is now done through the invitation system.
  */
 
 const ICON_OPTIONS = ["👥", "✈️", "🏠", "❤️", "💼", "🎉", "🍕", "🎮", "🏖️", "🎵", "📚", "⚽"];
@@ -42,47 +37,12 @@ export default function EditGroupModal({ group, onClose, onSaved }) {
   const [description, setDescription] = useState(group.description || "");
   const [currency, setCurrency] = useState(group.currency || "INR");
   const [category, setCategory] = useState(group.category || "other");
-  const [members, setMembers] = useState([...group.members]);
-  const [memberInput, setMemberInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [removingMember, setRemovingMember] = useState(null); // member name for confirmation
-
-  // Add a member
-  const handleAddMember = () => {
-    const trimmed = memberInput.trim();
-    if (!trimmed) return;
-    if (members.some((m) => m.toLowerCase() === trimmed.toLowerCase())) return;
-    setMembers([...members, trimmed]);
-    setMemberInput("");
-  };
-
-  const handleMemberKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddMember();
-    }
-  };
-
-  // Remove a member (with confirmation)
-  const confirmRemoveMember = (member) => {
-    setRemovingMember(member);
-  };
-
-  const executeRemoveMember = () => {
-    if (removingMember) {
-      setMembers(members.filter((m) => m !== removingMember));
-      setRemovingMember(null);
-    }
-  };
-
-  const cancelRemoveMember = () => {
-    setRemovingMember(null);
-  };
 
   // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim() || members.length < 2) return;
+    if (!name.trim()) return;
 
     setSubmitting(true);
     try {
@@ -92,7 +52,6 @@ export default function EditGroupModal({ group, onClose, onSaved }) {
         currency,
         category,
         icon,
-        members,
       });
       if (onSaved) onSaved();
       onClose();
@@ -212,7 +171,6 @@ export default function EditGroupModal({ group, onClose, onSaved }) {
 
           {/* ── Currency + Category Row ── */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Currency */}
             <div>
               <label
                 className={`block text-sm font-medium mb-1 ${
@@ -234,7 +192,6 @@ export default function EditGroupModal({ group, onClose, onSaved }) {
               </select>
             </div>
 
-            {/* Category */}
             <div>
               <label
                 className={`block text-sm font-medium mb-1 ${
@@ -257,7 +214,7 @@ export default function EditGroupModal({ group, onClose, onSaved }) {
             </div>
           </div>
 
-          {/* ── Category Pills (visual selector) ── */}
+          {/* ── Category Pills ── */}
           <div>
             <label
               className={`block text-sm font-medium mb-2 ${
@@ -273,7 +230,6 @@ export default function EditGroupModal({ group, onClose, onSaved }) {
                   type="button"
                   onClick={() => {
                     setCategory(c.value);
-                    // Auto-set icon to match category
                     const catIcon = CATEGORY_OPTIONS.find((x) => x.value === c.value);
                     if (catIcon) setIcon(catIcon.emoji);
                   }}
@@ -294,135 +250,12 @@ export default function EditGroupModal({ group, onClose, onSaved }) {
             </div>
           </div>
 
-          {/* ── Members Section ── */}
-          <div>
-            <label
-              className={`block text-sm font-medium mb-2 ${
-                darkMode ? "text-surface-300" : "text-surface-600"
-              }`}
-            >
-              Members{" "}
-              <span className={darkMode ? "text-surface-500" : "text-surface-400"}>
-                ({members.length})
-              </span>
-            </label>
-
-            {/* Current members as chips */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              {members.map((member) => (
-                <span
-                  key={member}
-                  className={`inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-lg text-sm font-medium animate-scale-in ${
-                    darkMode
-                      ? "bg-surface-700 text-surface-300 border border-surface-600"
-                      : "bg-surface-50 text-surface-700 border border-surface-200"
-                  }`}
-                >
-                  <span
-                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                      darkMode
-                        ? "bg-primary-900/40 text-primary-400"
-                        : "bg-primary-100 text-primary-700"
-                    }`}
-                  >
-                    {member.charAt(0).toUpperCase()}
-                  </span>
-                  {member}
-                  <button
-                    type="button"
-                    onClick={() => confirmRemoveMember(member)}
-                    disabled={members.length <= 2}
-                    className={`p-0.5 rounded-md transition-colors cursor-pointer ${
-                      members.length <= 2
-                        ? "opacity-30 cursor-not-allowed"
-                        : darkMode
-                        ? "hover:text-red-400 hover:bg-red-900/30"
-                        : "hover:text-red-500 hover:bg-red-50"
-                    }`}
-                    title={
-                      members.length <= 2
-                        ? "Minimum 2 members required"
-                        : `Remove ${member}`
-                    }
-                  >
-                    <HiOutlineXMark className="w-3.5 h-3.5" />
-                  </button>
-                </span>
-              ))}
-            </div>
-
-            {/* Add member input */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={memberInput}
-                onChange={(e) => setMemberInput(e.target.value)}
-                onKeyDown={handleMemberKeyDown}
-                placeholder="Add a new member..."
-                className={inputClasses}
-              />
-              <button
-                type="button"
-                onClick={handleAddMember}
-                disabled={!memberInput.trim()}
-                className="px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
-              >
-                <HiOutlinePlus className="w-5 h-5" />
-              </button>
-            </div>
-
-            {members.length > 0 && members.length < 2 && (
-              <p className="text-xs text-amber-500 mt-1.5">
-                A group needs at least 2 members
-              </p>
-            )}
+          {/* ── Info ── */}
+          <div className={`rounded-xl p-3 text-sm ${
+            darkMode ? "bg-surface-700/50 text-surface-400" : "bg-surface-50 text-surface-500"
+          }`}>
+            💡 Members are managed through the invitation system on the group page.
           </div>
-
-          {/* ── Remove Member Confirmation Dialog ── */}
-          {removingMember && (
-            <div
-              className={`rounded-xl p-4 border animate-scale-in ${
-                darkMode
-                  ? "bg-red-900/20 border-red-800"
-                  : "bg-red-50 border-red-200"
-              }`}
-            >
-              <p
-                className={`text-sm font-medium mb-1 ${
-                  darkMode ? "text-red-400" : "text-red-700"
-                }`}
-              >
-                Remove "{removingMember}"?
-              </p>
-              <p
-                className={`text-xs mb-3 ${
-                  darkMode ? "text-red-400/70" : "text-red-600/70"
-                }`}
-              >
-                Their existing expenses will still be counted in settlements.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={executeRemoveMember}
-                  className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600 transition-colors cursor-pointer"
-                >
-                  Yes, Remove
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelRemoveMember}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                    darkMode
-                      ? "bg-surface-700 text-surface-300 hover:bg-surface-600"
-                      : "bg-surface-100 text-surface-600 hover:bg-surface-200"
-                  }`}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* ── Action Buttons ── */}
           <div className="flex gap-3 pt-1">
@@ -439,7 +272,7 @@ export default function EditGroupModal({ group, onClose, onSaved }) {
             </button>
             <button
               type="submit"
-              disabled={!name.trim() || members.length < 2 || submitting}
+              disabled={!name.trim() || submitting}
               className="flex-1 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
               {submitting ? "Saving..." : "Save Changes"}

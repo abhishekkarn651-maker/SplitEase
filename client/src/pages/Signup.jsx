@@ -18,6 +18,7 @@ export default function Signup() {
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -29,8 +30,18 @@ export default function Signup() {
     e.preventDefault();
     setError("");
 
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !username || !email || !password || !confirmPassword) {
       setError("Please fill in all fields");
+      return;
+    }
+
+    if (username.length < 3) {
+      setError("Username must be at least 3 characters");
+      return;
+    }
+
+    if (!/^[a-z0-9_]+$/.test(username.toLowerCase())) {
+      setError("Username can only contain lowercase letters, numbers, and underscores");
       return;
     }
 
@@ -46,7 +57,7 @@ export default function Signup() {
 
     setSubmitting(true);
     try {
-      await signup(name, email, password);
+      await signup(name, username.toLowerCase(), email, password);
       navigate("/");
     } catch (err) {
       setError(err.response?.data?.message || "Signup failed");
@@ -100,6 +111,28 @@ export default function Signup() {
                 autoFocus
               />
             </div>
+          </div>
+
+          {/* Username */}
+          <div>
+            <label className="block text-sm font-medium text-surface-600 mb-1.5">
+              Username
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-400 text-sm font-medium">@</span>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                placeholder="johndoe"
+                className="w-full pl-9 pr-4 py-3 rounded-xl border border-surface-200 text-sm text-surface-800 placeholder-surface-400 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
+                required
+                maxLength={30}
+              />
+            </div>
+            {username && username.length < 3 && (
+              <p className="text-xs text-amber-500 mt-1">Minimum 3 characters</p>
+            )}
           </div>
 
           {/* Email */}

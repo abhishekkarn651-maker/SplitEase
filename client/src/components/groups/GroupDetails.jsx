@@ -15,6 +15,7 @@ import {
   HiOutlinePencilSquare,
 } from "react-icons/hi2";
 import EditGroupModal from "./EditGroupModal";
+import { useAuth } from "../../context/AuthContext";
 
 /**
  * GroupDetails — Main view for a single group.
@@ -38,13 +39,22 @@ export default function GroupDetails() {
     loadExpenses,
     loadSettlements,
     darkMode,
+    sendInvite,
   } = useApp();
+  const { user } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [activeTab, setActiveTab] = useState("expenses");
   const [searchQuery, setSearchQuery] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
+  const [inviteUsername, setInviteUsername] = useState("");
+  const [inviting, setInviting] = useState(false);
+
+  // Determine if current user is admin of this group
+  const isAdmin = currentGroup?.members?.some(
+    (m) => (m.user?._id || m.user) === user?._id && m.role === "admin"
+  );
 
   // Load group, expenses, and settlements on mount
   useEffect(() => {
@@ -73,6 +83,20 @@ export default function GroupDetails() {
     loadExpenses(id);
     loadSettlements(id);
   }, [id, loadGroupById, loadExpenses, loadSettlements]);
+
+  // Handle invite
+  const handleInvite = async () => {
+    if (!inviteUsername.trim()) return;
+    setInviting(true);
+    try {
+      await sendInvite(id, inviteUsername.trim());
+      setInviteUsername("");
+    } catch {
+      // Error handled in context
+    } finally {
+      setInviting(false);
+    }
+  };
 
   // Search expenses (client-side filter for instant feedback)
   const filteredExpenses = expenses.filter((exp) =>
@@ -179,17 +203,19 @@ export default function GroupDetails() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowEditModal(true)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow-md cursor-pointer ${
-                darkMode
-                  ? "bg-surface-700 text-surface-300 hover:bg-surface-600 border border-surface-600"
-                  : "bg-surface-100 text-surface-600 hover:bg-surface-200 border border-surface-200"
-              }`}
-            >
-              <HiOutlinePencilSquare className="w-4 h-4" />
-              Edit Group
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setShowEditModal(true)}
+                className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow-md cursor-pointer ${
+                  darkMode
+                    ? "bg-surface-700 text-surface-300 hover:bg-surface-600 border border-surface-600"
+                    : "bg-surface-100 text-surface-600 hover:bg-surface-200 border border-surface-200"
+                }`}
+              >
+                <HiOutlinePencilSquare className="w-4 h-4" />
+                Edit Group
+              </button>
+            )}
             <button
               onClick={() => {
                 setEditingExpense(null);
@@ -205,19 +231,63 @@ export default function GroupDetails() {
 
         {/* Member chips */}
         <div className="flex flex-wrap gap-2 mt-4">
-          {currentGroup.members.map((member) => (
-            <span
-              key={member}
-              className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium ${
-                darkMode
-                  ? "bg-surface-700 text-surface-300"
-                  : "bg-surface-100 text-surface-600"
-              }`}
-            >
-              {member}
-            </span>
-          ))}
+          {currentGroup.members.map((member) => {
+            const memberUser = member.user || {};
+            const displayName = memberUser.name || memberUser.username || "Unknown";
+            const uname = memberUser.username || "";
+            return (
+              <span
+                key={memberUser._id || uname}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium ${
+                  darkMode
+                    ? "bg-surface-700 text-surface-300"
+                    : "bg-surface-100 text-surface-600"
+                }`}
+              >
+                <span
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    darkMode
+                      ? "bg-primary-900/40 text-primary-400"
+                      : "bg-primary-100 text-primary-700"
+                  }`}
+                >
+                  {displayName.charAt(0).toUpperCase()}
+                </span>
+                {displayName}
+                {member.role === "admin" && (
+                  <span className={`text-[10px] px-1 py-0.5 rounded font-semibold ${
+                    darkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-50 text-amber-600"
+                  }`}>Admin</span>
+                )}
+              </span>
+            );
+          })}
         </div>
+
+        {/* Invite Member (admin only) */}
+        {isAdmin && (
+          <div className="mt-4 flex gap-2">
+            <input
+              type="text"
+              value={inviteUsername}
+              onChange={(e) => setInviteUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+              onKeyDown={(e) => e.key === "Enter" && handleInvite()}
+              placeholder="Invite by username..."
+              className={`flex-1 px-4 py-2 rounded-xl border text-sm outline-none transition-all ${
+                darkMode
+                  ? "bg-surface-700 border-surface-600 text-white placeholder-surface-400 focus:border-primary-500"
+                  : "bg-surface-50 border-surface-200 text-surface-800 placeholder-surface-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+              }`}
+            />
+            <button
+              onClick={handleInvite}
+              disabled={!inviteUsername.trim() || inviting}
+              className="px-4 py-2 bg-primary-500 text-white rounded-xl text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {inviting ? "Sending..." : "Invite"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Tab Toggle */}

@@ -13,7 +13,15 @@ export default function SettlementSummary({ settlements }) {
 
   if (!settlements) return null;
 
-  const { balances, settlements: debts, members } = settlements;
+  const { balances, settlements: debts, members, memberMap } = settlements;
+
+  // Helper to resolve display names from username keys
+  const displayName = (key) => {
+    if (memberMap && memberMap[key]) return memberMap[key];
+    // Handle old-format members (objects with name/username)
+    if (typeof key === "object" && key.name) return key.name;
+    return key;
+  };
 
   return (
     <div className="space-y-4">
@@ -28,13 +36,14 @@ export default function SettlementSummary({ settlements }) {
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {members.map((member) => {
-            const balance = balances[member] || 0;
+            const key = member.username || member;
+            const balance = balances[key] || 0;
             const isPositive = balance > 0;
             const isZero = Math.abs(balance) < 0.01;
 
             return (
               <div
-                key={member}
+                key={key}
                 className={`rounded-xl p-3 text-center transition-colors ${
                   darkMode
                     ? "bg-surface-700/50 border border-surface-600"
@@ -46,7 +55,7 @@ export default function SettlementSummary({ settlements }) {
                     darkMode ? "text-surface-200" : "text-surface-700"
                   }`}
                 >
-                  {member}
+                  {displayName(key)}
                 </p>
                 <p
                   className={`text-sm font-bold mt-0.5 ${
@@ -111,7 +120,7 @@ export default function SettlementSummary({ settlements }) {
                       darkMode ? "text-red-400" : "text-red-500"
                     }`}
                   >
-                    {debt.from}
+                    {displayName(debt.from)}
                   </span>
                   <HiOutlineArrowRight
                     className={`w-4 h-4 shrink-0 ${
@@ -124,7 +133,7 @@ export default function SettlementSummary({ settlements }) {
                       darkMode ? "text-green-400" : "text-green-600"
                     }`}
                   >
-                    {debt.to}
+                    {displayName(debt.to)}
                   </span>
                 </div>
                 <span

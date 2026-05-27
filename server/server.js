@@ -46,6 +46,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/groups", require("./routes/groupRoutes"));
 app.use("/api/expenses", require("./routes/expenseRoutes"));
+app.use("/api/invitations", require("./routes/invitationRoutes"));
 
 // ========================================
 // Error Handling Middleware

@@ -66,6 +66,10 @@ const expenseSchema = new mongoose.Schema(
       maxlength: [500, "Note cannot exceed 500 characters"],
       default: "",
     },
+    addedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
   },
   {
     timestamps: true,

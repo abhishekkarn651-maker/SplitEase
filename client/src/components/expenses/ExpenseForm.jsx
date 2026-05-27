@@ -23,10 +23,19 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
       : new Date().toISOString().split("T")[0]
   );
   const [note, setNote] = useState(editingExpense?.note || "");
+  // Derive a flat list of member info from the new group.members structure
+  const memberList = (group.members || []).map((m) => ({
+    username: m.user?.username || m.user,
+    name: m.user?.name || m.user?.username || m.user,
+  }));
+  const memberUsernames = memberList.map((m) => m.username);
+  const memberNameMap = {};
+  memberList.forEach((m) => { memberNameMap[m.username] = m.name; });
+
   const [contributors, setContributors] = useState(
     editingExpense?.contributors?.length > 0
       ? editingExpense.contributors
-      : [...group.members] // Default: everyone
+      : [...memberUsernames] // Default: everyone
   );
   const [submitting, setSubmitting] = useState(false);
 
@@ -56,7 +65,7 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
         paidByMultiple.length <= 1 &&
         (!paidByMultiple[0]?.member || !paidByMultiple[0]?.amount)
       ) {
-        const firstTwo = group.members.slice(0, 2);
+        const firstTwo = memberUsernames.slice(0, 2);
         const perPayer = Math.round((parsedAmount / firstTwo.length) * 100) / 100;
         setPaidByMultiple(
           firstTwo.map((m) => ({ member: m, amount: perPayer }))
@@ -116,16 +125,16 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
 
   // Select/deselect all members
   const toggleAll = () => {
-    if (contributors.length === group.members.length) {
+    if (contributors.length === memberUsernames.length) {
       setContributors([]);
     } else {
-      setContributors([...group.members]);
+      setContributors([...memberUsernames]);
     }
   };
 
   // ── Calculations ──
   const parsedAmount = parseFloat(amount) || 0;
-  const splitAmong = contributors.length > 0 ? contributors : group.members;
+  const splitAmong = contributors.length > 0 ? contributors : memberUsernames;
   const perPersonShare =
     splitAmong.length > 0 ? parsedAmount / splitAmong.length : 0;
 
@@ -326,9 +335,9 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
                 required
               >
                 <option value="">Select who paid</option>
-                {group.members.map((member) => (
-                  <option key={member} value={member}>
-                    {member}
+                {memberList.map((m) => (
+                  <option key={m.username} value={m.username}>
+                    {m.name} (@{m.username})
                   </option>
                 ))}
               </select>
@@ -355,14 +364,14 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
                       }`}
                     >
                       <option value="">Select member</option>
-                      {group.members
+                      {memberList
                         .filter(
                           (m) =>
-                            m === payer.member || !selectedPayers.includes(m)
+                            m.username === payer.member || !selectedPayers.includes(m.username)
                         )
-                        .map((member) => (
-                          <option key={member} value={member}>
-                            {member}
+                        .map((m) => (
+                          <option key={m.username} value={m.username}>
+                            {m.name} (@{m.username})
                           </option>
                         ))}
                     </select>
@@ -404,7 +413,7 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
 
                 {/* Add Payer + Auto-fill buttons */}
                 <div className="flex gap-2">
-                  {paidByMultiple.length < group.members.length && (
+                  {paidByMultiple.length < memberUsernames.length && (
                     <button
                       type="button"
                       onClick={addPayerRow}
@@ -522,17 +531,17 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
                 onClick={toggleAll}
                 className="text-xs text-primary-500 hover:text-primary-600 font-medium cursor-pointer"
               >
-                {contributors.length === group.members.length
+                {contributors.length === memberUsernames.length
                   ? "Deselect All"
                   : "Select All"}
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {group.members.map((member) => (
+              {memberList.map((m) => (
                 <label
-                  key={member}
+                  key={m.username}
                   className={`flex items-center gap-2 p-2.5 rounded-xl cursor-pointer transition-all text-sm ${
-                    contributors.includes(member)
+                    contributors.includes(m.username)
                       ? darkMode
                         ? "bg-primary-900/30 border border-primary-700 text-primary-400"
                         : "bg-primary-50 border border-primary-200 text-primary-700"
@@ -543,11 +552,11 @@ export default function ExpenseForm({ group, onClose, editingExpense }) {
                 >
                   <input
                     type="checkbox"
-                    checked={contributors.includes(member)}
-                    onChange={() => toggleContributor(member)}
+                    checked={contributors.includes(m.username)}
+                    onChange={() => toggleContributor(m.username)}
                     className="accent-primary-500 w-4 h-4"
                   />
-                  {member}
+                  {m.name} <span className="opacity-50">@{m.username}</span>
                 </label>
               ))}
             </div>
