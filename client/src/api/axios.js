@@ -9,8 +9,15 @@ import axios from "axios";
  * to http://localhost:5000. In production, you'd set the baseURL
  * to your actual backend domain.
  */
+// const API = axios.create({
+//   baseURL: "/api",
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
+
 const API = axios.create({
-  baseURL: "/api",
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,
   headers: {
     "Content-Type": "application/json",
   },
