@@ -19,7 +19,10 @@ const app = express();
 // ========================================
 
 // Enable CORS so the React frontend (on a different port) can talk to this API
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  credentials: true
+}));
 
 // Parse incoming JSON request bodies
 app.use(express.json());
