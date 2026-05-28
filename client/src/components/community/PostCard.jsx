@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { useCommunity } from "../../context/CommunityContext";
 import { useAuth } from "../../context/AuthContext";
+import toast from "react-hot-toast";
 import {
   HiOutlineMapPin,
   HiOutlineHandThumbUp,
@@ -10,6 +11,7 @@ import {
   HiBookmark,
   HiOutlineStar,
   HiStar,
+  HiOutlineShare,
 } from "react-icons/hi2";
 
 /**
@@ -57,6 +59,33 @@ export default function PostCard({ post }) {
   const handleWishlist = async (e) => {
     e.stopPropagation();
     await saveToWishlist(post._id);
+  };
+
+  const handleShare = async (e) => {
+    e.stopPropagation(); // Prevent card navigation
+    const postUrl = `${window.location.origin}/community/${post._id}`;
+    const shareData = {
+      title: post.title,
+      text: `Check out this travel experience at ${post.destination}!`,
+      url: postUrl,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          toast.error("Failed to share");
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(postUrl);
+        toast.success("Link copied to clipboard! 📋");
+      } catch {
+        toast.error("Failed to copy link");
+      }
+    }
   };
 
   // Category badge colors
@@ -161,7 +190,7 @@ export default function PostCard({ post }) {
               {post.author?.name || "Anonymous"}
             </p>
             <p className={`text-[10px] truncate ${darkMode ? "text-surface-500" : "text-surface-400"}`}>
-              {post.groupName} • {timeAgo(post.createdAt)}
+              {post.groupName ? `${post.groupName} • ` : ""}{timeAgo(post.createdAt)}
             </p>
           </div>
         </div>
@@ -202,6 +231,18 @@ export default function PostCard({ post }) {
               <HiOutlineBookmark className="w-3.5 h-3.5" />
             )}
             Save
+          </button>
+
+          <button
+            onClick={handleShare}
+            className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+              darkMode
+                ? "text-surface-400 hover:text-primary-400 hover:bg-surface-700"
+                : "text-surface-500 hover:text-primary-600 hover:bg-primary-50"
+            }`}
+          >
+            <HiOutlineShare className="w-3.5 h-3.5" />
+            Share
           </button>
         </div>
       </div>

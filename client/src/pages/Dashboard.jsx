@@ -40,6 +40,7 @@ export default function Dashboard() {
       icon: HiOutlineUserGroup,
       color: "bg-primary-50 text-primary-600",
       darkColor: "bg-primary-900/20 text-primary-400",
+      link: "/groups",
     },
     {
       label: "Total Expenses",
@@ -92,40 +93,58 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((card) => (
-          <div
-            key={card.label}
-            className={`rounded-2xl p-4 sm:p-5 transition-all duration-200 hover:shadow-card-hover ${
-              darkMode
-                ? "bg-surface-800 border border-surface-700"
-                : "bg-white border border-surface-200 shadow-card"
-            }`}
-          >
-            <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${
-                darkMode ? card.darkColor : card.color
-              }`}
-            >
-              <card.icon className="w-5 h-5" />
+        {statCards.map((card) => {
+          const CardContent = (
+            <>
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${
+                  darkMode ? card.darkColor : card.color
+                }`}
+              >
+                <card.icon className="w-5 h-5" />
+              </div>
+              <p
+                className={`text-xs font-medium uppercase tracking-wide ${
+                  darkMode ? "text-surface-400" : "text-surface-500"
+                }`}
+              >
+                {card.label}
+              </p>
+              <p
+                className={`text-xl sm:text-2xl font-bold mt-0.5 ${
+                  darkMode ? "text-white" : "text-surface-800"
+                }`}
+              >
+                {card.value}
+              </p>
+            </>
+          );
+
+          const cardClass = `rounded-2xl p-4 sm:p-5 transition-all duration-200 hover:shadow-card-hover ${
+            darkMode
+              ? "bg-surface-800 border border-surface-700 hover:border-surface-600"
+              : "bg-white border border-surface-200 shadow-card hover:border-primary-200"
+          }`;
+
+          if (card.link) {
+            return (
+              <Link
+                key={card.label}
+                to={card.link}
+                className={`${cardClass} block cursor-pointer`}
+              >
+                {CardContent}
+              </Link>
+            );
+          }
+
+          return (
+            <div key={card.label} className={cardClass}>
+              {CardContent}
             </div>
-            <p
-              className={`text-xs font-medium uppercase tracking-wide ${
-                darkMode ? "text-surface-400" : "text-surface-500"
-              }`}
-            >
-              {card.label}
-            </p>
-            <p
-              className={`text-xl sm:text-2xl font-bold mt-0.5 ${
-                darkMode ? "text-white" : "text-surface-800"
-              }`}
-            >
-              {card.value}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Recent Activity */}

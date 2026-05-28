@@ -20,28 +20,49 @@ import {
  * user info, dark mode toggle, and logout.
  */
 export default function Navbar() {
-  const { darkMode, toggleDarkMode, pendingCount, pendingInvitations, loadPendingInvitations, loadPendingCount, acceptInvite, declineInvite, loadGroups } = useApp();
+  const {
+    darkMode,
+    toggleDarkMode,
+    pendingCount,
+    pendingInvitations,
+    loadPendingInvitations,
+    loadPendingCount,
+    acceptInvite,
+    declineInvite,
+    loadGroups,
+    notifications,
+    notificationsCount,
+    loadNotifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+  } = useApp();
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [activeTab, setActiveTab] = useState("invites"); // "invites" or "activity"
   const dropdownRef = useRef(null);
 
-  // Poll for pending invitation count every 30 seconds
+  // Poll for pending invitation count and notifications every 30 seconds
   useEffect(() => {
     if (user) {
       loadPendingCount();
-      const interval = setInterval(loadPendingCount, 30000);
+      loadNotifications();
+      const interval = setInterval(() => {
+        loadPendingCount();
+        loadNotifications();
+      }, 30000);
       return () => clearInterval(interval);
     }
-  }, [user, loadPendingCount]);
+  }, [user, loadPendingCount, loadNotifications]);
 
-  // Load full invitations when dropdown opens
+  // Load full invitations and notifications when dropdown opens
   useEffect(() => {
     if (showNotifications) {
       loadPendingInvitations();
+      loadNotifications();
     }
-  }, [showNotifications, loadPendingInvitations]);
+  }, [showNotifications, loadPendingInvitations, loadNotifications]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -78,6 +99,33 @@ export default function Navbar() {
     } catch {
       // Error handled in context
     }
+  };
+
+  const timeAgo = (dateString) => {
+    const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+    if (seconds < 60) return "just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days}d ago`;
+    const months = Math.floor(days / 30);
+    return `${months}mo ago`;
+  };
+
+  const handleNotificationClick = async (notif) => {
+    if (!notif.isRead) {
+      await markNotificationAsRead(notif._id);
+    }
+    setShowNotifications(false);
+    navigate(`/community/${notif.post?._id || notif.post}`);
+    setTimeout(() => {
+      const el = document.getElementById("comments-section");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 600);
   };
 
   return (
@@ -175,9 +223,9 @@ export default function Navbar() {
                 aria-label="Notifications"
               >
                 <HiOutlineBellAlert className="w-5 h-5" />
-                {pendingCount > 0 && (
+                {(pendingCount + notificationsCount) > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-scale-in shadow-sm">
-                    {pendingCount > 9 ? "9+" : pendingCount}
+                    {Math.min(99, pendingCount + notificationsCount)}
                   </span>
                 )}
               </button>
@@ -187,66 +235,156 @@ export default function Navbar() {
                 <div
                   className={`absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto rounded-2xl border shadow-modal animate-scale-in z-50 ${
                     darkMode
-                      ? "bg-surface-800 border-surface-700"
-                      : "bg-white border-surface-200"
+                      ? "bg-surface-800 border-surface-700 text-white"
+                      : "bg-white border-surface-200 text-surface-800"
                   }`}
                 >
-                  <div className={`px-4 py-3 border-b ${darkMode ? "border-surface-700" : "border-surface-100"}`}>
-                    <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-surface-800"}`}>
-                      Invitations
-                    </h3>
+                  {/* Tab Selector */}
+                  <div className="flex border-b border-surface-200 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-800/50 sticky top-0 backdrop-blur-md z-10">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("invites")}
+                      className={`flex-1 py-3 text-xs font-semibold border-b-2 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        activeTab === "invites"
+                          ? "border-primary-500 text-primary-500 dark:text-primary-400"
+                          : "border-transparent text-surface-400 hover:text-surface-600 dark:hover:text-surface-200"
+                      }`}
+                    >
+                      📩 Invites
+                      {pendingCount > 0 && (
+                        <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[9px] font-bold animate-pulse">
+                          {pendingCount}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("activity")}
+                      className={`flex-1 py-3 text-xs font-semibold border-b-2 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        activeTab === "activity"
+                          ? "border-primary-500 text-primary-500 dark:text-primary-400"
+                          : "border-transparent text-surface-400 hover:text-surface-600 dark:hover:text-surface-200"
+                      }`}
+                    >
+                      🔔 Activity
+                      {notificationsCount > 0 && (
+                        <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[9px] font-bold animate-pulse">
+                          {notificationsCount}
+                        </span>
+                      )}
+                    </button>
                   </div>
 
-                  {pendingInvitations.length === 0 ? (
-                    <div className="px-4 py-8 text-center">
-                      <p className={`text-sm ${darkMode ? "text-surface-400" : "text-surface-500"}`}>
-                        No pending invitations
-                      </p>
-                    </div>
-                  ) : (
+                  {/* Invites Tab View */}
+                  {activeTab === "invites" && (
                     <div className="p-2 space-y-1">
-                      {pendingInvitations.map((inv) => (
-                        <div
-                          key={inv._id}
-                          className={`rounded-xl p-3 transition-colors ${
-                            darkMode
-                              ? "bg-surface-700/50 hover:bg-surface-700"
-                              : "bg-surface-50 hover:bg-surface-100"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-lg">{inv.group?.icon || "👥"}</span>
-                            <div className="min-w-0 flex-1">
-                              <p className={`text-sm font-medium truncate ${darkMode ? "text-white" : "text-surface-800"}`}>
-                                {inv.group?.name || "Unknown Group"}
-                              </p>
-                              <p className={`text-xs ${darkMode ? "text-surface-400" : "text-surface-500"}`}>
-                                Invited by @{inv.invitedBy?.username}
-                              </p>
+                      {pendingInvitations.length === 0 ? (
+                        <div className="px-4 py-8 text-center">
+                          <p className={`text-sm ${darkMode ? "text-surface-400" : "text-surface-500"}`}>
+                            No pending invitations
+                          </p>
+                        </div>
+                      ) : (
+                        pendingInvitations.map((inv) => (
+                          <div
+                            key={inv._id}
+                            className={`rounded-xl p-3 transition-colors ${
+                              darkMode
+                                ? "bg-surface-700/50 hover:bg-surface-700"
+                                : "bg-surface-50 hover:bg-surface-100"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-lg">{inv.group?.icon || "👥"}</span>
+                              <div className="min-w-0 flex-1 text-left">
+                                <p className={`text-sm font-medium truncate ${darkMode ? "text-white" : "text-surface-800"}`}>
+                                  {inv.group?.name || "Unknown Group"}
+                                </p>
+                                <p className={`text-xs ${darkMode ? "text-surface-400" : "text-surface-500"}`}>
+                                  Invited by @{inv.invitedBy?.username}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleAccept(inv._id)}
+                                className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-primary-500 text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors cursor-pointer"
+                              >
+                                <HiOutlineCheck className="w-3.5 h-3.5" />
+                                Accept
+                              </button>
+                              <button
+                                onClick={() => handleDecline(inv._id)}
+                                className={`flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                                  darkMode
+                                    ? "bg-surface-600 text-surface-300 hover:bg-surface-500"
+                                    : "bg-surface-200 text-surface-600 hover:bg-surface-300"
+                                }`}
+                              >
+                                <HiOutlineXMark className="w-3.5 h-3.5" />
+                                Decline
+                              </button>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleAccept(inv._id)}
-                              className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-primary-500 text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors cursor-pointer"
-                            >
-                              <HiOutlineCheck className="w-3.5 h-3.5" />
-                              Accept
-                            </button>
-                            <button
-                              onClick={() => handleDecline(inv._id)}
-                              className={`flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                                darkMode
-                                  ? "bg-surface-600 text-surface-300 hover:bg-surface-500"
-                                  : "bg-surface-200 text-surface-600 hover:bg-surface-300"
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {/* Activity Tab View */}
+                  {activeTab === "activity" && (
+                    <div>
+                      {notifications.length > 0 && notificationsCount > 0 && (
+                        <div className={`px-3 py-1.5 flex justify-end border-b ${darkMode ? "border-surface-700/60" : "border-surface-100"}`}>
+                          <button
+                            type="button"
+                            onClick={markAllNotificationsAsRead}
+                            className="text-[10px] font-semibold text-primary-500 hover:text-primary-600 cursor-pointer"
+                          >
+                            Mark all as read
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="p-2 space-y-1">
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-8 text-center">
+                            <p className={`text-sm ${darkMode ? "text-surface-400" : "text-surface-500"}`}>
+                              No notifications
+                            </p>
+                          </div>
+                        ) : (
+                          notifications.map((notif) => (
+                            <div
+                              key={notif._id}
+                              onClick={() => handleNotificationClick(notif)}
+                              className={`rounded-xl p-2.5 transition-colors cursor-pointer text-left border ${
+                                notif.isRead
+                                  ? darkMode
+                                    ? "bg-transparent border-transparent text-surface-300 hover:bg-surface-700/30"
+                                    : "bg-transparent border-transparent text-surface-600 hover:bg-surface-50"
+                                  : darkMode
+                                  ? "bg-primary-950/20 border-primary-900/30 text-white hover:bg-primary-950/30"
+                                  : "bg-primary-50/50 border-primary-100/50 text-surface-800 hover:bg-primary-50/70"
                               }`}
                             >
-                              <HiOutlineXMark className="w-3.5 h-3.5" />
-                              Decline
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                              <p className="text-xs leading-relaxed">
+                                <span className="font-semibold text-primary-500 dark:text-primary-400">
+                                  @{notif.sender?.username || "Someone"}
+                                </span>{" "}
+                                {notif.type === "comment" ? "commented on" : "replied to your comment on"}{" "}
+                                <span className="font-semibold">"{notif.post?.title}"</span>:
+                              </p>
+                              <p className={`text-[11px] truncate mt-0.5 ${darkMode ? "text-surface-400" : "text-surface-500"}`}>
+                                "{notif.comment?.text}"
+                              </p>
+                              <span className={`text-[9px] block mt-1 ${darkMode ? "text-surface-500" : "text-surface-400"}`}>
+                                {timeAgo(notif.createdAt)}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

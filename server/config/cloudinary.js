@@ -44,12 +44,12 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Multer upload middleware — max 5 photos, 5MB each
+// Multer upload middleware — max 5 photos, 10MB each
 const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
+    fileSize: 10 * 1024 * 1024, // 10MB
     files: 5,
   },
 });

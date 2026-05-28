@@ -25,8 +25,9 @@ import {
  */
 export default function CommunityFeed() {
   const { darkMode } = useApp();
-  const { posts, loading, hasMore, loadPosts, resetFeed, page } = useCommunity();
+  const { posts, loading, hasMore, loadPosts, resetFeed, page, wishlist, loadWishlist } = useCommunity();
 
+  const [activeTab, setActiveTab] = useState("feed"); // "feed", "wishlist", "myPosts"
   const [activeCategory, setActiveCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,19 +54,24 @@ export default function CommunityFeed() {
       sort: sortBy,
       category: activeCategory,
       search: searchQuery,
+      myPosts: activeTab === "myPosts" ? "true" : "false",
     }),
-    [sortBy, activeCategory, searchQuery]
+    [sortBy, activeCategory, searchQuery, activeTab]
   );
 
   // Initial load and filter changes
   useEffect(() => {
-    resetFeed();
-    loadPosts(buildParams(1), false);
-  }, [activeCategory, sortBy, searchQuery, loadPosts, resetFeed, buildParams]);
+    if (activeTab === "wishlist") {
+      loadWishlist();
+    } else {
+      resetFeed();
+      loadPosts(buildParams(1), false);
+    }
+  }, [activeTab, activeCategory, sortBy, searchQuery, loadPosts, resetFeed, buildParams, loadWishlist]);
 
   // Infinite scroll observer
   useEffect(() => {
-    if (loading || !hasMore) return;
+    if (loading || !hasMore || activeTab === "wishlist") return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -83,7 +89,7 @@ export default function CommunityFeed() {
     return () => {
       if (currentRef) observer.unobserve(currentRef);
     };
-  }, [loading, hasMore, page, loadPosts, buildParams]);
+  }, [loading, hasMore, page, loadPosts, buildParams, activeTab]);
 
   // Debounced search
   const handleSearchChange = (e) => {
@@ -121,6 +127,8 @@ export default function CommunityFeed() {
       </div>
     </div>
   );
+
+  const displayedPosts = activeTab === "wishlist" ? wishlist : posts;
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -164,100 +172,136 @@ export default function CommunityFeed() {
         </div>
       </div>
 
-      {/* Filters Bar */}
-      <div className="space-y-3">
-        {/* Search + Sort Row */}
-        <div className="flex gap-3">
-          {/* Search */}
-          <div className="relative flex-1">
-            <HiOutlineMagnifyingGlass
-              className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${
-                darkMode ? "text-surface-400" : "text-surface-400"
-              }`}
-            />
-            <input
-              type="text"
-              value={searchInput}
-              onChange={handleSearchChange}
-              placeholder="Search destinations, reviews..."
-              className={`w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm transition-all outline-none ${
-                darkMode
-                  ? "bg-surface-800 border-surface-700 text-white placeholder-surface-400 focus:border-primary-500"
-                  : "bg-white border-surface-200 text-surface-800 placeholder-surface-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-              }`}
-            />
-            {searchInput && (
-              <button
-                onClick={clearSearch}
-                className={`absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full cursor-pointer ${
-                  darkMode ? "text-surface-400 hover:text-white" : "text-surface-400 hover:text-surface-700"
-                }`}
-              >
-                <HiOutlineXMark className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          {/* Sort */}
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className={`appearance-none pl-9 pr-8 py-2.5 rounded-xl border text-sm font-medium transition-all outline-none cursor-pointer ${
-                darkMode
-                  ? "bg-surface-800 border-surface-700 text-surface-300 focus:border-primary-500"
-                  : "bg-white border-surface-200 text-surface-600 focus:border-primary-500"
-              }`}
-            >
-              <option value="newest">Newest</option>
-              <option value="helpful">Most Helpful</option>
-            </select>
-            <HiOutlineFunnel className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${
-              darkMode ? "text-surface-400" : "text-surface-400"
-            }`} />
-          </div>
-        </div>
-
-        {/* Category Pills */}
-        <div className="flex flex-wrap gap-2">
-          {categories.map((cat) => (
-            <button
-              key={cat.value}
-              onClick={() => setActiveCategory(cat.value)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
-                activeCategory === cat.value
-                  ? "bg-primary-500 text-white shadow-sm"
-                  : darkMode
-                  ? "bg-surface-800 text-surface-300 hover:bg-surface-700 border border-surface-700"
-                  : "bg-white text-surface-600 hover:bg-surface-100 border border-surface-200"
-              }`}
-            >
-              <span>{cat.emoji}</span>
-              {cat.label}
-            </button>
-          ))}
-        </div>
+      {/* Feed Navigation Tabs */}
+      <div className="flex gap-4 border-b border-surface-200 dark:border-surface-750">
+        <button
+          onClick={() => setActiveTab("feed")}
+          className={`pb-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+            activeTab === "feed"
+              ? "border-primary-500 text-primary-600 dark:text-primary-400"
+              : "border-transparent text-surface-500 hover:text-surface-800 dark:hover:text-white"
+          }`}
+        >
+          🌎 Community Feed
+        </button>
+        <button
+          onClick={() => setActiveTab("wishlist")}
+          className={`pb-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+            activeTab === "wishlist"
+              ? "border-primary-500 text-primary-600 dark:text-primary-400"
+              : "border-transparent text-surface-500 hover:text-surface-800 dark:hover:text-white"
+          }`}
+        >
+          ⭐ Saved Spots
+        </button>
+        <button
+          onClick={() => setActiveTab("myPosts")}
+          className={`pb-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+            activeTab === "myPosts"
+              ? "border-primary-500 text-primary-600 dark:text-primary-400"
+              : "border-transparent text-surface-500 hover:text-surface-800 dark:hover:text-white"
+          }`}
+        >
+          👤 My Posts
+        </button>
       </div>
 
+      {/* Filters Bar - only show for active feed and myPosts */}
+      {activeTab !== "wishlist" && (
+        <div className="space-y-3">
+          {/* Search + Sort Row */}
+          <div className="flex gap-3">
+            {/* Search */}
+            <div className="relative flex-1">
+              <HiOutlineMagnifyingGlass
+                className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${
+                  darkMode ? "text-surface-400" : "text-surface-400"
+                }`}
+              />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={handleSearchChange}
+                placeholder="Search destinations, reviews..."
+                className={`w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm transition-all outline-none ${
+                  darkMode
+                    ? "bg-surface-800 border-surface-700 text-white placeholder-surface-400 focus:border-primary-500"
+                    : "bg-white border-surface-200 text-surface-800 placeholder-surface-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                }`}
+              />
+              {searchInput && (
+                <button
+                  onClick={clearSearch}
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full cursor-pointer ${
+                    darkMode ? "text-surface-400 hover:text-white" : "text-surface-400 hover:text-surface-700"
+                  }`}
+                >
+                  <HiOutlineXMark className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Sort */}
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className={`appearance-none pl-9 pr-8 py-2.5 rounded-xl border text-sm font-medium transition-all outline-none cursor-pointer ${
+                  darkMode
+                    ? "bg-surface-800 border-surface-700 text-surface-300 focus:border-primary-500"
+                    : "bg-white border-surface-200 text-surface-600 focus:border-primary-500"
+                }`}
+              >
+                <option value="newest">Newest</option>
+                <option value="helpful">Most Helpful</option>
+              </select>
+              <HiOutlineFunnel className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${
+                darkMode ? "text-surface-400" : "text-surface-400"
+              }`} />
+            </div>
+          </div>
+
+          {/* Category Pills */}
+          <div className="flex flex-wrap gap-2">
+            {categories.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => setActiveCategory(cat.value)}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                  activeCategory === cat.value
+                    ? "bg-primary-500 text-white shadow-sm"
+                    : darkMode
+                    ? "bg-surface-800 text-surface-300 hover:bg-surface-700 border border-surface-700"
+                    : "bg-white text-surface-600 hover:bg-surface-100 border border-surface-200"
+                }`}
+              >
+                <span>{cat.emoji}</span>
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Posts Grid */}
-      {posts.length > 0 ? (
+      {displayedPosts.length > 0 ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {posts.map((post) => (
+            {displayedPosts.map((post) => (
               <PostCard key={post._id} post={post} />
             ))}
 
             {/* Loading skeletons while appending */}
-            {loading &&
+            {loading && activeTab !== "wishlist" &&
               Array.from({ length: 3 }).map((_, i) => (
                 <SkeletonCard key={`skeleton-${i}`} />
               ))}
           </div>
 
           {/* Infinite scroll trigger */}
-          {hasMore && <div ref={loadMoreRef} className="h-10" />}
+          {activeTab !== "wishlist" && hasMore && <div ref={loadMoreRef} className="h-10" />}
 
-          {!hasMore && posts.length > 0 && (
+          {activeTab !== "wishlist" && !hasMore && displayedPosts.length > 0 && (
             <p
               className={`text-center text-sm py-6 ${
                 darkMode ? "text-surface-500" : "text-surface-400"
@@ -287,13 +331,21 @@ export default function CommunityFeed() {
             darkMode ? "text-surface-600" : "text-surface-300"
           }`} />
           <h3 className={`text-lg font-semibold mb-2 ${darkMode ? "text-white" : "text-surface-800"}`}>
-            {searchQuery || activeCategory !== "all"
+            {activeTab === "wishlist"
+              ? "No saved spotlights yet"
+              : activeTab === "myPosts"
+              ? "You haven't shared any spotlights yet"
+              : searchQuery || activeCategory !== "all"
               ? "No posts found"
               : "No community posts yet"
             }
           </h3>
           <p className={`text-sm ${darkMode ? "text-surface-400" : "text-surface-500"}`}>
-            {searchQuery || activeCategory !== "all"
+            {activeTab === "wishlist"
+              ? "When you find travel spotlights you like, click the save button to keep them here!"
+              : activeTab === "myPosts"
+              ? "Discover a great location? Click 'Share Your Experience' above to write a travel spotlight!"
+              : searchQuery || activeCategory !== "all"
               ? "Try adjusting your search or filters"
               : "Be the first to share a trip experience!"
             }

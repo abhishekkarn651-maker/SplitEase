@@ -177,4 +177,36 @@ export const fetchMyWishlist = () => API.get("/community/wishlist");
 /** Delete own community post */
 export const deleteCommunityPost = (id) => API.delete(`/community/${id}`);
 
+// ========================================
+// COMMENT API CALLS
+// ========================================
+
+/** Fetch comments for a post */
+export const fetchPostComments = (postId) => API.get(`/community/${postId}/comments`);
+
+/** Add a comment to a post */
+export const createComment = (postId, data) => API.post(`/community/${postId}/comments`, data);
+
+/** Delete a comment */
+export const deleteComment = (commentId) => API.delete(`/community/comments/${commentId}`);
+
+/** Update community post (multipart form data) */
+export const updateCommunityPost = (id, formData) =>
+  API.put(`/community/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+// ========================================
+// NOTIFICATION API CALLS
+// ========================================
+
+/** Fetch user's activity notifications */
+export const fetchNotifications = () => API.get("/notifications");
+
+/** Mark a specific notification as read */
+export const markNotificationRead = (id) => API.put(`/notifications/${id}/read`);
+
+/** Mark all notifications as read */
+export const markAllNotificationsRead = () => API.put("/notifications/read-all");
+
 export default API;

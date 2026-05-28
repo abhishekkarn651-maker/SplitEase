@@ -38,7 +38,7 @@ const communityPostSchema = new mongoose.Schema(
     },
     groupName: {
       type: String,
-      required: [true, "Group name is required"],
+      required: false,
       trim: true,
       maxlength: [100, "Group name cannot exceed 100 characters"],
     },

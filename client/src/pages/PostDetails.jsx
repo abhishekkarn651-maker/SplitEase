@@ -1,10 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { useCommunity } from "../context/CommunityContext";
 import { useAuth } from "../context/AuthContext";
 import PhotoGallery from "../components/community/PhotoGallery";
+import CommentSection from "../components/community/CommentSection";
+import CreatePostModal from "../components/community/CreatePostModal";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import toast from "react-hot-toast";
 import {
   HiOutlineArrowLeft,
   HiOutlineMapPin,
@@ -16,8 +19,10 @@ import {
   HiOutlineBookmark,
   HiBookmark,
   HiOutlineTrash,
+  HiOutlinePencil,
   HiOutlineStar,
   HiStar,
+  HiOutlineShare,
 } from "react-icons/hi2";
 
 /**
@@ -32,6 +37,7 @@ export default function PostDetails() {
   const { darkMode } = useApp();
   const { currentPost, loading, loadPost, voteHelpful, saveToWishlist, removePost } = useCommunity();
   const { user } = useAuth();
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     loadPost(id);
@@ -82,6 +88,31 @@ export default function PostDetails() {
   };
 
   const isAuthor = currentPost?.author?._id === user?._id;
+
+  const handleShare = async () => {
+    const shareData = {
+      title: currentPost.title,
+      text: `Check out this travel experience at ${currentPost.destination}!`,
+      url: window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          toast.error("Failed to share");
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Link copied to clipboard! 📋");
+      } catch {
+        toast.error("Failed to copy link");
+      }
+    }
+  };
 
   // Category config
   const categoryConfig = {
@@ -291,25 +322,62 @@ export default function PostDetails() {
                 )}
                 {currentPost.isWishlisted ? "Wishlisted" : "Save to Wishlist"}
               </button>
+
+              {/* Share */}
+              <button
+                onClick={handleShare}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                  darkMode
+                    ? "bg-surface-700 text-surface-300 hover:bg-surface-600 border border-surface-600"
+                    : "bg-surface-100 text-surface-600 hover:bg-surface-200 border border-surface-200"
+                }`}
+              >
+                <HiOutlineShare className="w-4.5 h-4.5" />
+                Share
+              </button>
             </div>
 
             {/* Delete (author only) */}
             {isAuthor && (
-              <button
-                onClick={handleDelete}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                  darkMode
-                    ? "bg-surface-700 text-red-400 hover:text-red-300 hover:bg-surface-600 border border-surface-600"
-                    : "bg-surface-100 text-red-600 hover:bg-red-50 hover:text-red-700 border border-surface-200"
-                }`}
-              >
-                <HiOutlineTrash className="w-4 h-4" />
-                Delete
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowEditModal(true)}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                    darkMode
+                      ? "bg-surface-700 text-surface-300 hover:text-white hover:bg-surface-600 border border-surface-600"
+                      : "bg-surface-100 text-surface-600 hover:bg-surface-200 border border-surface-200"
+                  }`}
+                >
+                  <HiOutlinePencil className="w-4 h-4" />
+                  Edit
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                    darkMode
+                      ? "bg-surface-700 text-red-400 hover:text-red-300 hover:bg-surface-600 border border-surface-600"
+                      : "bg-surface-100 text-red-600 hover:bg-red-50 hover:text-red-700 border border-surface-200"
+                  }`}
+                >
+                  <HiOutlineTrash className="w-4 h-4" />
+                  Delete
+                </button>
+              </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Comments Section */}
+      <CommentSection postId={id} postAuthorId={currentPost?.author?._id} />
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <CreatePostModal
+          post={currentPost}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
     </div>
   );
 }

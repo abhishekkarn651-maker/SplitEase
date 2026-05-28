@@ -11,6 +11,10 @@ const {
   toggleHelpful,
   toggleWishlist,
   deletePost,
+  getPostComments,
+  addComment,
+  deleteComment,
+  updatePost,
 } = require("../controllers/communityController");
 
 /**
@@ -28,6 +32,10 @@ const {
  * PUT    /api/community/:id/helpful  → Toggle helpful vote
  * PUT    /api/community/:id/wishlist → Toggle wishlist
  * DELETE /api/community/:id          → Delete own post
+ *
+ * GET    /api/community/:postId/comments → Get post comments
+ * POST   /api/community/:postId/comments → Add a comment
+ * DELETE /api/community/comments/:id     → Delete comment
  */
 
 // All community routes require authentication
@@ -44,9 +52,18 @@ router
 router
   .route("/:id")
   .get(getPostById)
+  .put(upload.array("photos", 5), updatePost)
   .delete(deletePost);
 
 router.put("/:id/helpful", toggleHelpful);
 router.put("/:id/wishlist", toggleWishlist);
+
+// Comment routes
+router
+  .route("/:postId/comments")
+  .get(getPostComments)
+  .post(addComment);
+
+router.delete("/comments/:id", deleteComment);
 
 module.exports = router;

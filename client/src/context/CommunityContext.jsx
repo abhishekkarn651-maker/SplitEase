@@ -38,6 +38,7 @@ const ACTIONS = {
   ADD_POST: "ADD_POST",
   REMOVE_POST: "REMOVE_POST",
   UPDATE_POST_VOTE: "UPDATE_POST_VOTE",
+  UPDATE_POST: "UPDATE_POST",
   SET_PAGE: "SET_PAGE",
   SET_HAS_MORE: "SET_HAS_MORE",
   SET_TOTAL: "SET_TOTAL",
@@ -87,6 +88,20 @@ function communityReducer(state, action) {
         currentPost: state.currentPost?._id === postId
           ? updatePost(state.currentPost)
           : state.currentPost,
+      };
+    }
+
+    case ACTIONS.UPDATE_POST: {
+      const updatedPost = action.payload;
+      return {
+        ...state,
+        posts: state.posts.map((post) =>
+          post._id === updatedPost._id ? updatedPost : post
+        ),
+        currentPost:
+          state.currentPost?._id === updatedPost._id
+            ? updatedPost
+            : state.currentPost,
       };
     }
 
@@ -157,6 +172,19 @@ export function CommunityProvider({ children }) {
       return data.data;
     } catch (err) {
       const msg = err.response?.data?.message || "Failed to publish post";
+      toast.error(msg);
+      throw err;
+    }
+  }, []);
+
+  // ── Edit a community post ──
+  const editPost = useCallback(async (id, formData) => {
+    try {
+      const { data } = await api.updateCommunityPost(id, formData);
+      dispatch({ type: ACTIONS.UPDATE_POST, payload: data.data });
+      return data.data;
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to update post";
       toast.error(msg);
       throw err;
     }
@@ -238,6 +266,7 @@ export function CommunityProvider({ children }) {
     loadPosts,
     loadPost,
     publishPost,
+    editPost,
     voteHelpful,
     saveToWishlist,
     loadWishlist,

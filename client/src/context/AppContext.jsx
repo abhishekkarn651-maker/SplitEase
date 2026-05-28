@@ -22,6 +22,8 @@ const initialState = {
   dashboardStats: null,
   pendingInvitations: [],
   pendingCount: 0,
+  notifications: [],
+  notificationsCount: 0,
   loading: false,
   darkMode: localStorage.getItem("splitease-dark") === "true",
 };
@@ -42,6 +44,8 @@ const ACTIONS = {
   SET_DASHBOARD_STATS: "SET_DASHBOARD_STATS",
   SET_PENDING_INVITATIONS: "SET_PENDING_INVITATIONS",
   SET_PENDING_COUNT: "SET_PENDING_COUNT",
+  SET_NOTIFICATIONS: "SET_NOTIFICATIONS",
+  SET_NOTIFICATIONS_COUNT: "SET_NOTIFICATIONS_COUNT",
   TOGGLE_DARK_MODE: "TOGGLE_DARK_MODE",
 };
 
@@ -113,6 +117,12 @@ function appReducer(state, action) {
 
     case ACTIONS.SET_PENDING_COUNT:
       return { ...state, pendingCount: action.payload };
+
+    case ACTIONS.SET_NOTIFICATIONS:
+      return { ...state, notifications: action.payload };
+
+    case ACTIONS.SET_NOTIFICATIONS_COUNT:
+      return { ...state, notificationsCount: action.payload };
 
     case ACTIONS.TOGGLE_DARK_MODE:
       return { ...state, darkMode: !state.darkMode };
@@ -351,6 +361,50 @@ export function AppProvider({ children }) {
     }
   }, [state.pendingCount]);
 
+  // ── Notification Actions ──
+
+  const loadNotifications = useCallback(async () => {
+    try {
+      const { data } = await api.fetchNotifications();
+      dispatch({ type: ACTIONS.SET_NOTIFICATIONS, payload: data.data });
+      const unreadCount = data.data.filter((n) => !n.isRead).length;
+      dispatch({ type: ACTIONS.SET_NOTIFICATIONS_COUNT, payload: unreadCount });
+    } catch {
+      // Silently fail — polling shouldn't show errors
+    }
+  }, []);
+
+  const markNotificationAsRead = useCallback(async (id) => {
+    try {
+      await api.markNotificationRead(id);
+      dispatch({
+        type: ACTIONS.SET_NOTIFICATIONS,
+        payload: state.notifications.map((n) =>
+          n._id === id ? { ...n, isRead: true } : n
+        ),
+      });
+      dispatch({
+        type: ACTIONS.SET_NOTIFICATIONS_COUNT,
+        payload: Math.max(0, state.notificationsCount - 1),
+      });
+    } catch {
+      // Silently fail
+    }
+  }, [state.notifications, state.notificationsCount]);
+
+  const markAllNotificationsAsRead = useCallback(async () => {
+    try {
+      await api.markAllNotificationsRead();
+      dispatch({
+        type: ACTIONS.SET_NOTIFICATIONS,
+        payload: state.notifications.map((n) => ({ ...n, isRead: true })),
+      });
+      dispatch({ type: ACTIONS.SET_NOTIFICATIONS_COUNT, payload: 0 });
+    } catch {
+      // Silently fail
+    }
+  }, [state.notifications]);
+
   // ── Context Value ──
   const value = {
     ...state,
@@ -374,6 +428,10 @@ export function AppProvider({ children }) {
     sendInvite,
     acceptInvite,
     declineInvite,
+    // Notification actions
+    loadNotifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -1,5 +1,7 @@
 const CommunityPost = require("../models/CommunityPost");
 const Group = require("../models/Group");
+const Comment = require("../models/Comment");
+const Notification = require("../models/Notification");
 const asyncHandler = require("../utils/asyncHandler");
 const { cloudinary } = require("../config/cloudinary");
 
@@ -35,9 +37,9 @@ function isGroupMember(group, userId) {
 const createPost = asyncHandler(async (req, res) => {
   const { groupId, destination, city, state, country, title, review, category, rating } = req.body;
 
-  // Validate required fields
-  if (!groupId || !destination || !city || !title || !review || !rating) {
-    const error = new Error("Please provide all required fields: groupId, destination, city, title, review, rating");
+  // Validate required fields (groupId is now optional)
+  if (!destination || !city || !title || !review || !rating) {
+    const error = new Error("Please provide all required fields: destination, city, title, review, rating");
     error.statusCode = 400;
     throw error;
   }
@@ -56,18 +58,23 @@ const createPost = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  // Verify user is a member of the specified group
-  const group = await Group.findById(groupId);
-  if (!group) {
-    const error = new Error("Group not found");
-    error.statusCode = 404;
-    throw error;
-  }
+  let groupName = "";
 
-  if (!isGroupMember(group, req.user._id)) {
-    const error = new Error("You are not a member of this group");
-    error.statusCode = 403;
-    throw error;
+  // If groupId is provided, verify user is a member of the specified group and get the name
+  if (groupId) {
+    const group = await Group.findById(groupId);
+    if (!group) {
+      const error = new Error("Group not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (!isGroupMember(group, req.user._id)) {
+      const error = new Error("You are not a member of this group");
+      error.statusCode = 403;
+      throw error;
+    }
+    groupName = group.name;
   }
 
   // Collect photo URLs from multer/Cloudinary upload
@@ -76,7 +83,7 @@ const createPost = asyncHandler(async (req, res) => {
   // Create the post — note: groupName is a plain string, NOT a reference
   const post = await CommunityPost.create({
     author: req.user._id,
-    groupName: group.name, // Plain string snapshot — privacy by design
+    groupName, // Plain string snapshot — privacy by design
     destination: destination.trim(),
     location: {
       city: city.trim(),
@@ -108,9 +115,14 @@ const getAllPosts = asyncHandler(async (req, res) => {
   const sort = req.query.sort || "newest";
   const search = req.query.search || "";
   const category = req.query.category || "";
+  const myPosts = req.query.myPosts === "true";
 
   // Build filter
   const filter = {};
+
+  if (myPosts) {
+    filter.author = req.user._id;
+  }
 
   if (search) {
     filter.$text = { $search: search };
@@ -337,6 +349,204 @@ const deletePost = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Community post deleted" });
 });
 
+// -----------------------------------------
+// @route   GET /api/community/:postId/comments
+// @desc    Get comments for a community post
+// @access  Protected
+// -----------------------------------------
+const getPostComments = asyncHandler(async (req, res) => {
+  const { postId } = req.params;
+  const comments = await Comment.find({ post: postId })
+    .populate("author", "name username")
+    .sort({ createdAt: 1 }); // oldest first
+  res.json({ success: true, count: comments.length, data: comments });
+});
+
+// -----------------------------------------
+// @route   POST /api/community/:postId/comments
+// @desc    Add a comment or reply to a community post
+// @access  Protected
+// -----------------------------------------
+const addComment = asyncHandler(async (req, res) => {
+  const { postId } = req.params;
+  const { text, parentComment } = req.body;
+
+  if (!text || !text.trim()) {
+    const error = new Error("Comment text cannot be empty");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const post = await CommunityPost.findById(postId);
+  if (!post) {
+    const error = new Error("Post not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const comment = await Comment.create({
+    post: postId,
+    author: req.user._id,
+    text: text.trim(),
+    parentComment: parentComment || null,
+  });
+
+  await comment.populate("author", "name username");
+
+  // Push activity notification
+  try {
+    if (parentComment) {
+      // Replying to a parent comment
+      const parent = await Comment.findById(parentComment);
+      if (parent && parent.author.toString() !== req.user._id.toString()) {
+        await Notification.create({
+          recipient: parent.author,
+          sender: req.user._id,
+          type: "reply",
+          post: postId,
+          comment: comment._id,
+        });
+      }
+    } else {
+      // Direct comment on the post
+      if (post.author.toString() !== req.user._id.toString()) {
+        await Notification.create({
+          recipient: post.author,
+          sender: req.user._id,
+          type: "comment",
+          post: postId,
+          comment: comment._id,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Failed to create activity notification:", err.message);
+    // Continue even if notification creation fails
+  }
+
+  res.status(201).json({ success: true, data: comment });
+});
+
+// -----------------------------------------
+// @route   DELETE /api/community/comments/:id
+// @desc    Delete a comment (author only)
+// @access  Protected
+// -----------------------------------------
+const deleteComment = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const comment = await Comment.findById(id);
+
+  if (!comment) {
+    const error = new Error("Comment not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Only comment author can delete their comment
+  if (comment.author.toString() !== req.user._id.toString()) {
+    const error = new Error("You can only delete your own comments");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  // Find reply IDs to clean up notifications
+  const replies = await Comment.find({ parentComment: id }).select("_id");
+  const replyIds = replies.map(r => r._id);
+  const allCommentIds = [id, ...replyIds];
+
+  // Delete comment and replies
+  await Comment.findByIdAndDelete(id);
+  await Comment.deleteMany({ parentComment: id });
+
+  // Delete notifications
+  await Notification.deleteMany({ comment: { $in: allCommentIds } });
+
+  res.json({ success: true, message: "Comment deleted" });
+});
+
+// -----------------------------------------
+// @route   PUT /api/community/:id
+// @desc    Update a community post (author only)
+// @access  Protected
+// -----------------------------------------
+const updatePost = asyncHandler(async (req, res) => {
+  const post = await CommunityPost.findById(req.params.id);
+
+  if (!post) {
+    const error = new Error("Post not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Only the author can update their own post
+  if (post.author.toString() !== req.user._id.toString()) {
+    const error = new Error("You can only edit your own posts");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const { destination, city, state, country, title, review, category, rating } = req.body;
+
+  // Validate required fields
+  if (!destination || !city || !title || !review || !rating) {
+    const error = new Error("Please provide all required fields: destination, city, title, review, rating");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Handle kept photos
+  let keptPhotos = [];
+  if (req.body.keptPhotos) {
+    try {
+      keptPhotos = typeof req.body.keptPhotos === "string" 
+        ? JSON.parse(req.body.keptPhotos) 
+        : req.body.keptPhotos;
+      if (!Array.isArray(keptPhotos)) {
+        keptPhotos = [keptPhotos];
+      }
+    } catch (e) {
+      keptPhotos = Array.isArray(req.body.keptPhotos) ? req.body.keptPhotos : [req.body.keptPhotos];
+    }
+  }
+
+  // Delete photos from Cloudinary that were removed by user
+  const removedPhotos = post.photos.filter((url) => !keptPhotos.includes(url));
+  for (const photoUrl of removedPhotos) {
+    try {
+      const parts = photoUrl.split("/");
+      const folderAndFile = parts.slice(parts.indexOf("splitease")).join("/");
+      const publicId = folderAndFile.replace(/\.[^/.]+$/, "");
+      await cloudinary.uploader.destroy(publicId);
+    } catch (err) {
+      console.error("Failed to delete Cloudinary image on update:", err.message);
+    }
+  }
+
+  // Collect new photo URLs from multer/Cloudinary upload
+  const newPhotos = req.files ? req.files.map((file) => file.path) : [];
+
+  // Combine kept photos and new photos
+  const finalPhotos = [...keptPhotos, ...newPhotos].slice(0, 5);
+
+  // Update post fields
+  post.destination = destination.trim();
+  post.location = {
+    city: city.trim(),
+    state: state ? state.trim() : "",
+    country: country ? country.trim() : "India",
+  };
+  post.title = title.trim();
+  post.review = review.trim();
+  post.photos = finalPhotos;
+  post.category = category || "travel";
+  post.rating = Number(rating);
+
+  await post.save();
+  await post.populate("author", "name username");
+
+  res.json({ success: true, data: post });
+});
+
 module.exports = {
   createPost,
   getAllPosts,
@@ -345,4 +555,8 @@ module.exports = {
   toggleHelpful,
   toggleWishlist,
   deletePost,
+  getPostComments,
+  addComment,
+  deleteComment,
+  updatePost,
 };

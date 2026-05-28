@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useApp } from "../../context/AppContext";
 import { useCommunity } from "../../context/CommunityContext";
 import {
@@ -8,7 +8,6 @@ import {
   HiOutlineStar,
   HiStar,
   HiOutlineShieldCheck,
-  HiOutlineUserGroup,
 } from "react-icons/hi2";
 
 /**
@@ -21,33 +20,39 @@ import {
  * Privacy: Only explicitly entered text and selected photos
  * are published. No group data (expenses, members) is shared.
  */
-export default function CreatePostModal({ group: initialGroup, onClose }) {
-  const { darkMode, groups, loadGroups } = useApp();
-  const { publishPost } = useCommunity();
+export default function CreatePostModal({ group: initialGroup, post, onClose }) {
+  const { darkMode } = useApp();
+  const { publishPost, editPost } = useCommunity();
 
-  const [selectedGroup, setSelectedGroup] = useState(initialGroup || null);
-  const [formData, setFormData] = useState({
-    destination: "",
-    city: "",
-    state: "",
-    country: "India",
-    title: "",
-    review: "",
-    category: "travel",
-    rating: 0,
-  });
+  const [formData, setFormData] = useState(
+    post
+      ? {
+          destination: post.destination,
+          city: post.location?.city || "",
+          state: post.location?.state || "",
+          country: post.location?.country || "India",
+          title: post.title,
+          review: post.review,
+          category: post.category,
+          rating: post.rating,
+        }
+      : {
+          destination: "",
+          city: "",
+          state: "",
+          country: "India",
+          title: "",
+          review: "",
+          category: "travel",
+          rating: 0,
+        }
+  );
+  const [existingPhotos, setExistingPhotos] = useState(post?.photos || []);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
-
-  // Load user's groups if not already loaded (for group selector)
-  useEffect(() => {
-    if (!initialGroup && groups.length === 0) {
-      loadGroups();
-    }
-  }, [initialGroup, groups.length, loadGroups]);
 
   const categories = [
     { value: "travel", label: "🧳 Travel" },
@@ -66,27 +71,24 @@ export default function CreatePostModal({ group: initialGroup, onClose }) {
     setFormData((prev) => ({ ...prev, rating: star }));
   };
 
-  const handleGroupSelect = (e) => {
-    const groupId = e.target.value;
-    const found = groups.find((g) => g._id === groupId);
-    setSelectedGroup(found || null);
-  };
-
   const handleFileSelect = (files) => {
-    const fileArray = Array.from(files).slice(0, 5 - selectedFiles.length);
+    const maxAllowed = 5 - existingPhotos.length - selectedFiles.length;
+    if (maxAllowed <= 0) return;
+
+    const fileArray = Array.from(files).slice(0, maxAllowed);
 
     // Validate file types
     const validFiles = fileArray.filter((f) =>
       ["image/jpeg", "image/png", "image/webp"].includes(f.type)
     );
 
-    setSelectedFiles((prev) => [...prev, ...validFiles].slice(0, 5));
+    setSelectedFiles((prev) => [...prev, ...validFiles].slice(0, maxAllowed));
 
     // Generate previews
     validFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreviews((prev) => [...prev, reader.result].slice(0, 5));
+        setPreviews((prev) => [...prev, reader.result].slice(0, maxAllowed));
       };
       reader.readAsDataURL(file);
     });
@@ -95,7 +97,7 @@ export default function CreatePostModal({ group: initialGroup, onClose }) {
   const handleDrop = (e) => {
     e.preventDefault();
     setDragActive(false);
-    if (e.dataTransfer.files) {
+    if (e.dataTransfer.files && (existingPhotos.length + selectedFiles.length) < 5) {
       handleFileSelect(e.dataTransfer.files);
     }
   };
@@ -112,10 +114,14 @@ export default function CreatePostModal({ group: initialGroup, onClose }) {
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const removeExistingPhoto = (urlToRemove) => {
+    setExistingPhotos((prev) => prev.filter((url) => url !== urlToRemove));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!selectedGroup || !formData.destination || !formData.city || !formData.title || !formData.review || !formData.rating) {
+    if (!formData.destination || !formData.city || !formData.title || !formData.review || !formData.rating) {
       return;
     }
 
@@ -123,7 +129,9 @@ export default function CreatePostModal({ group: initialGroup, onClose }) {
 
     try {
       const data = new FormData();
-      data.append("groupId", selectedGroup._id);
+      if (initialGroup) {
+        data.append("groupId", initialGroup._id);
+      }
       data.append("destination", formData.destination);
       data.append("city", formData.city);
       data.append("state", formData.state);
@@ -133,11 +141,19 @@ export default function CreatePostModal({ group: initialGroup, onClose }) {
       data.append("category", formData.category);
       data.append("rating", formData.rating);
 
+      if (post) {
+        data.append("keptPhotos", JSON.stringify(existingPhotos));
+      }
+
       selectedFiles.forEach((file) => {
         data.append("photos", file);
       });
 
-      await publishPost(data);
+      if (post) {
+        await editPost(post._id, data);
+      } else {
+        await publishPost(data);
+      }
       onClose();
     } catch {
       // Error handled in context
@@ -147,7 +163,6 @@ export default function CreatePostModal({ group: initialGroup, onClose }) {
   };
 
   const isValid =
-    selectedGroup &&
     formData.destination.trim() &&
     formData.city.trim() &&
     formData.title.trim() &&
@@ -185,7 +200,7 @@ export default function CreatePostModal({ group: initialGroup, onClose }) {
           <div className="flex items-center gap-2">
             <HiOutlineGlobeAlt className="w-5 h-5 text-primary-500" />
             <h2 className={`text-lg font-semibold ${darkMode ? "text-white" : "text-surface-800"}`}>
-              Share to Community
+              {post ? "Edit Travel Spotlight" : "Share to Community"}
             </h2>
           </div>
           <button
@@ -212,13 +227,12 @@ export default function CreatePostModal({ group: initialGroup, onClose }) {
             </p>
           </div>
 
-          {/* Group Selection — either read-only (from GroupDetails) or dropdown (from CommunityFeed) */}
-          <div>
-            <label className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-surface-300" : "text-surface-600"}`}>
-              Sharing from Group <span className="text-red-400">*</span>
-            </label>
-            {initialGroup ? (
-              /* Read-only when opened from GroupDetails */
+          {/* Group Name Banner (only show read-only if initialGroup is provided) */}
+          {initialGroup && (
+            <div>
+              <label className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-surface-300" : "text-surface-600"}`}>
+                Sharing from Group
+              </label>
               <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm ${
                 darkMode
                   ? "bg-surface-700/50 border-surface-600 text-surface-300"
@@ -227,34 +241,8 @@ export default function CreatePostModal({ group: initialGroup, onClose }) {
                 <span className="text-lg">{initialGroup.icon || "👥"}</span>
                 <span className="font-medium">{initialGroup.name}</span>
               </div>
-            ) : (
-              /* Dropdown when opened from CommunityFeed */
-              <>
-                <div className="relative">
-                  <HiOutlineUserGroup className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${
-                    darkMode ? "text-surface-400" : "text-surface-400"
-                  }`} />
-                  <select
-                    value={selectedGroup?._id || ""}
-                    onChange={handleGroupSelect}
-                    className={`${inputClass} pl-10`}
-                  >
-                    <option value="">Select a group...</option>
-                    {groups.map((g) => (
-                      <option key={g._id} value={g._id}>
-                        {g.icon || "👥"} {g.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {groups.length === 0 && (
-                  <p className={`text-xs mt-1.5 ${darkMode ? "text-surface-500" : "text-surface-400"}`}>
-                    You need to be part of a group to share to community.
-                  </p>
-                )}
-              </>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Title */}
           <div>
@@ -411,24 +399,24 @@ export default function CreatePostModal({ group: initialGroup, onClose }) {
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
-              onClick={() => selectedFiles.length < 5 && fileInputRef.current?.click()}
+              onClick={() => (existingPhotos.length + selectedFiles.length) < 5 && fileInputRef.current?.click()}
               className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
                 dragActive
                   ? "border-primary-500 bg-primary-50/50 dark:bg-primary-900/20"
                   : darkMode
                   ? "border-surface-600 hover:border-surface-500 bg-surface-700/30"
                   : "border-surface-300 hover:border-primary-400 bg-surface-50"
-              } ${selectedFiles.length >= 5 ? "opacity-50 cursor-not-allowed" : ""}`}
+              } ${(existingPhotos.length + selectedFiles.length) >= 5 ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}`}
             >
               <HiOutlinePhoto className={`w-8 h-8 mx-auto mb-2 ${darkMode ? "text-surface-500" : "text-surface-400"}`} />
               <p className={`text-sm ${darkMode ? "text-surface-400" : "text-surface-500"}`}>
-                {selectedFiles.length >= 5
+                {(existingPhotos.length + selectedFiles.length) >= 5
                   ? "Maximum photos reached"
                   : "Drag & drop photos or click to browse"
                 }
               </p>
               <p className={`text-[10px] mt-1 ${darkMode ? "text-surface-500" : "text-surface-400"}`}>
-                JPEG, PNG, or WebP • Max 5MB each
+                JPEG, PNG, or WebP • Max 10MB each
               </p>
             </div>
 
@@ -442,10 +430,29 @@ export default function CreatePostModal({ group: initialGroup, onClose }) {
             />
 
             {/* Preview grid */}
-            {previews.length > 0 && (
+            {(existingPhotos.length > 0 || previews.length > 0) && (
               <div className="grid grid-cols-5 gap-2 mt-3">
+                {/* Existing Photos */}
+                {existingPhotos.map((url, index) => (
+                  <div key={`existing-${index}`} className="relative group aspect-square rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700">
+                    <img
+                      src={url}
+                      alt={`Existing ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingPhoto(url)}
+                      className="absolute top-1 right-1 p-0.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    >
+                      <HiOutlineXMark className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+
+                {/* New Previews */}
                 {previews.map((preview, index) => (
-                  <div key={index} className="relative group aspect-square rounded-lg overflow-hidden">
+                  <div key={`new-${index}`} className="relative group aspect-square rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700">
                     <img
                       src={preview}
                       alt={`Preview ${index + 1}`}
@@ -483,7 +490,7 @@ export default function CreatePostModal({ group: initialGroup, onClose }) {
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-medium hover:bg-primary-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm hover:shadow-md"
             >
               <HiOutlineGlobeAlt className="w-4 h-4" />
-              {submitting ? "Publishing..." : "Publish to Community"}
+              {submitting ? "Saving..." : post ? "Save Changes" : "Publish to Community"}
             </button>
           </div>
         </form>
