@@ -185,7 +185,7 @@ export default function CreatePostModal({ group: initialGroup, post, onClose }) 
 
       {/* Modal */}
       <div
-        className={`relative w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-y-auto rounded-2xl border shadow-modal animate-scale-in ${
+        className={`relative w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-y-auto rounded-none sm:rounded-2xl border shadow-modal animate-scale-in ${
           darkMode
             ? "bg-surface-800 border-surface-700"
             : "bg-white border-surface-200"
@@ -277,7 +277,7 @@ export default function CreatePostModal({ group: initialGroup, post, onClose }) 
           </div>
 
           {/* Location: City, State, Country */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-surface-300" : "text-surface-600"}`}>
                 City <span className="text-red-400">*</span>
@@ -323,7 +323,7 @@ export default function CreatePostModal({ group: initialGroup, post, onClose }) 
           </div>
 
           {/* Category & Rating */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-surface-300" : "text-surface-600"}`}>
                 Category <span className="text-red-400">*</span>
@@ -431,7 +431,7 @@ export default function CreatePostModal({ group: initialGroup, post, onClose }) 
 
             {/* Preview grid */}
             {(existingPhotos.length > 0 || previews.length > 0) && (
-              <div className="grid grid-cols-5 gap-2 mt-3">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-3">
                 {/* Existing Photos */}
                 {existingPhotos.map((url, index) => (
                   <div key={`existing-${index}`} className="relative group aspect-square rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700">

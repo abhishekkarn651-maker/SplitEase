@@ -199,7 +199,7 @@ export default function PostDetails() {
           </div>
 
           {/* Meta info row */}
-          <div className={`flex flex-wrap items-center gap-4 pb-4 mb-5 border-b ${
+          <div className={`flex flex-wrap items-center gap-3 sm:gap-4 pb-4 mb-5 border-b ${
             darkMode ? "border-surface-700" : "border-surface-100"
           }`}>
             {/* Author */}
@@ -281,14 +281,14 @@ export default function PostDetails() {
           )}
 
           {/* Action buttons */}
-          <div className={`flex items-center justify-between pt-4 border-t ${
+          <div className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t ${
             darkMode ? "border-surface-700" : "border-surface-100"
           }`}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {/* Helpful */}
               <button
                 onClick={() => voteHelpful(currentPost._id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer min-h-[44px] ${
                   currentPost.isHelpful
                     ? "bg-primary-500 text-white shadow-sm"
                     : darkMode
@@ -307,7 +307,7 @@ export default function PostDetails() {
               {/* Wishlist */}
               <button
                 onClick={() => saveToWishlist(currentPost._id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer min-h-[44px] ${
                   currentPost.isWishlisted
                     ? "bg-amber-500 text-white shadow-sm"
                     : darkMode
@@ -326,7 +326,7 @@ export default function PostDetails() {
               {/* Share */}
               <button
                 onClick={handleShare}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer min-h-[44px] ${
                   darkMode
                     ? "bg-surface-700 text-surface-300 hover:bg-surface-600 border border-surface-600"
                     : "bg-surface-100 text-surface-600 hover:bg-surface-200 border border-surface-200"
@@ -339,10 +339,10 @@ export default function PostDetails() {
 
             {/* Delete (author only) */}
             {isAuthor && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 sm:self-auto self-end">
                 <button
                   onClick={() => setShowEditModal(true)}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer min-h-[44px] ${
                     darkMode
                       ? "bg-surface-700 text-surface-300 hover:text-white hover:bg-surface-600 border border-surface-600"
                       : "bg-surface-100 text-surface-600 hover:bg-surface-200 border border-surface-200"
@@ -353,7 +353,7 @@ export default function PostDetails() {
                 </button>
                 <button
                   onClick={handleDelete}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer min-h-[44px] ${
                     darkMode
                       ? "bg-surface-700 text-red-400 hover:text-red-300 hover:bg-surface-600 border border-surface-600"
                       : "bg-surface-100 text-red-600 hover:bg-red-50 hover:text-red-700 border border-surface-200"

@@ -173,10 +173,10 @@ export default function CommunityFeed() {
       </div>
 
       {/* Feed Navigation Tabs */}
-      <div className="flex gap-4 border-b border-surface-200 dark:border-surface-750">
+      <div className="flex gap-4 border-b border-surface-200 dark:border-surface-750 overflow-x-auto scrollbar-hide -mx-3 px-3 sm:mx-0 sm:px-0">
         <button
           onClick={() => setActiveTab("feed")}
-          className={`pb-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`pb-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap min-h-[44px] flex items-center ${
             activeTab === "feed"
               ? "border-primary-500 text-primary-600 dark:text-primary-400"
               : "border-transparent text-surface-500 hover:text-surface-800 dark:hover:text-white"
@@ -186,7 +186,7 @@ export default function CommunityFeed() {
         </button>
         <button
           onClick={() => setActiveTab("wishlist")}
-          className={`pb-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`pb-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap min-h-[44px] flex items-center ${
             activeTab === "wishlist"
               ? "border-primary-500 text-primary-600 dark:text-primary-400"
               : "border-transparent text-surface-500 hover:text-surface-800 dark:hover:text-white"
@@ -196,7 +196,7 @@ export default function CommunityFeed() {
         </button>
         <button
           onClick={() => setActiveTab("myPosts")}
-          className={`pb-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`pb-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap min-h-[44px] flex items-center ${
             activeTab === "myPosts"
               ? "border-primary-500 text-primary-600 dark:text-primary-400"
               : "border-transparent text-surface-500 hover:text-surface-800 dark:hover:text-white"
@@ -210,7 +210,7 @@ export default function CommunityFeed() {
       {activeTab !== "wishlist" && (
         <div className="space-y-3">
           {/* Search + Sort Row */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
             <div className="relative flex-1">
               <HiOutlineMagnifyingGlass
@@ -262,12 +262,12 @@ export default function CommunityFeed() {
           </div>
 
           {/* Category Pills */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap scrollbar-hide">
             {categories.map((cat) => (
               <button
                 key={cat.value}
                 onClick={() => setActiveCategory(cat.value)}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap min-h-[44px] ${
                   activeCategory === cat.value
                     ? "bg-primary-500 text-white shadow-sm"
                     : darkMode

@@ -67,46 +67,46 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-900 px-4 py-12 transition-colors duration-300">
       <div className="w-full max-w-md animate-slide-up">
-        {/* Logo */}
+        {/* Logo & Intro */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-primary-500 rounded-2xl text-white font-bold text-2xl mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-500 rounded-2xl text-white font-bold text-lg mb-4 shadow-md shadow-primary-500/20 transform hover:scale-105 transition-transform duration-300">
             S
           </div>
-          <h1 className="text-3xl font-bold text-surface-800">
-            Create your account
+          <h1 className="text-3xl font-extrabold tracking-tight text-surface-900 dark:text-white">
+            Create account
           </h1>
-          <p className="text-surface-500 mt-1">
-            Start splitting expenses with friends
+          <p className="text-surface-500 dark:text-surface-400 mt-2 text-sm">
+            Join SplitEase to seamlessly split expenses on your next trip
           </p>
         </div>
 
         {/* Form Card */}
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-2xl p-7 shadow-modal border border-surface-100 space-y-5"
+          className="bg-white dark:bg-surface-800 rounded-3xl p-8 shadow-xl border border-surface-200/60 dark:border-surface-700/50 space-y-5 transition-all duration-300"
         >
           {/* Error message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl animate-scale-in">
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 text-sm px-4 py-3.5 rounded-2xl animate-scale-in">
               {error}
             </div>
           )}
 
           {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-surface-600 mb-1.5">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold tracking-wide uppercase text-surface-500 dark:text-surface-400">
               Full Name
             </label>
             <div className="relative">
-              <HiOutlineUser className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-surface-400" />
+              <HiOutlineUser className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400 dark:text-surface-500" />
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-surface-200 text-sm text-surface-800 placeholder-surface-400 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
+                className="w-full pl-11 pr-4 py-3 rounded-2xl border border-surface-200 dark:border-surface-700/70 bg-transparent text-sm text-surface-800 dark:text-white placeholder-surface-400 dark:placeholder-surface-500 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all duration-200"
                 required
                 autoFocus
               />
@@ -114,92 +114,92 @@ export default function Signup() {
           </div>
 
           {/* Username */}
-          <div>
-            <label className="block text-sm font-medium text-surface-600 mb-1.5">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold tracking-wide uppercase text-surface-500 dark:text-surface-400">
               Username
             </label>
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-400 text-sm font-medium">@</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 dark:text-surface-500 text-sm font-semibold">@</span>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                 placeholder="johndoe"
-                className="w-full pl-9 pr-4 py-3 rounded-xl border border-surface-200 text-sm text-surface-800 placeholder-surface-400 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
+                className="w-full pl-9 pr-4 py-3 rounded-2xl border border-surface-200 dark:border-surface-700/70 bg-transparent text-sm text-surface-800 dark:text-white placeholder-surface-400 dark:placeholder-surface-500 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all duration-200"
                 required
                 maxLength={30}
               />
             </div>
             {username && username.length < 3 && (
-              <p className="text-xs text-amber-500 mt-1">Minimum 3 characters</p>
+              <p className="text-xs text-amber-500 mt-1 pl-1">Minimum 3 characters</p>
             )}
           </div>
 
           {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-surface-600 mb-1.5">
-              Email
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold tracking-wide uppercase text-surface-500 dark:text-surface-400">
+              Email Address
             </label>
             <div className="relative">
-              <HiOutlineEnvelope className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-surface-400" />
+              <HiOutlineEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400 dark:text-surface-500" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-surface-200 text-sm text-surface-800 placeholder-surface-400 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
+                placeholder="name@domain.com"
+                className="w-full pl-11 pr-4 py-3 rounded-2xl border border-surface-200 dark:border-surface-700/70 bg-transparent text-sm text-surface-800 dark:text-white placeholder-surface-400 dark:placeholder-surface-500 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all duration-200"
                 required
               />
             </div>
           </div>
 
           {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-surface-600 mb-1.5">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold tracking-wide uppercase text-surface-500 dark:text-surface-400">
               Password
             </label>
             <div className="relative">
-              <HiOutlineLockClosed className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-surface-400" />
+              <HiOutlineLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400 dark:text-surface-500" />
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Minimum 6 characters"
-                className="w-full pl-11 pr-11 py-3 rounded-xl border border-surface-200 text-sm text-surface-800 placeholder-surface-400 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
+                className="w-full pl-11 pr-11 py-3 rounded-2xl border border-surface-200 dark:border-surface-700/70 bg-transparent text-sm text-surface-880 dark:text-white placeholder-surface-400 dark:placeholder-surface-500 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all duration-200"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 transition-colors cursor-pointer"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:text-surface-500 dark:hover:text-surface-300 transition-colors cursor-pointer"
               >
                 {showPassword ? (
-                  <HiOutlineEyeSlash className="w-4.5 h-4.5" />
+                  <HiOutlineEyeSlash className="w-5 h-5" />
                 ) : (
-                  <HiOutlineEye className="w-4.5 h-4.5" />
+                  <HiOutlineEye className="w-5 h-5" />
                 )}
               </button>
             </div>
           </div>
 
           {/* Confirm Password */}
-          <div>
-            <label className="block text-sm font-medium text-surface-600 mb-1.5">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold tracking-wide uppercase text-surface-500 dark:text-surface-400">
               Confirm Password
             </label>
             <div className="relative">
-              <HiOutlineLockClosed className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-surface-400" />
+              <HiOutlineLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400 dark:text-surface-500" />
               <input
                 type={showPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter your password"
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-surface-200 text-sm text-surface-800 placeholder-surface-400 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
+                placeholder="Re-enter password"
+                className="w-full pl-11 pr-4 py-3 rounded-2xl border border-surface-200 dark:border-surface-700/70 bg-transparent text-sm text-surface-880 dark:text-white placeholder-surface-400 dark:placeholder-surface-500 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all duration-200"
                 required
               />
             </div>
             {confirmPassword && password !== confirmPassword && (
-              <p className="text-xs text-red-500 mt-1.5 animate-scale-in">
+              <p className="text-xs text-red-500 mt-1.5 pl-1 animate-scale-in">
                 Passwords do not match
               </p>
             )}
@@ -209,11 +209,11 @@ export default function Signup() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md cursor-pointer"
+            className="w-full py-3.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl font-semibold transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:shadow-primary-500/10 cursor-pointer transform active:scale-[0.98] flex items-center justify-center"
           >
             {submitting ? (
               <span className="inline-flex items-center gap-2">
-                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <svg className="w-4 h-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
                   <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round" className="opacity-75" />
                 </svg>
@@ -225,11 +225,11 @@ export default function Signup() {
           </button>
 
           {/* Login link */}
-          <p className="text-center text-sm text-surface-500">
+          <p className="text-center text-xs text-surface-500 dark:text-surface-400">
             Already have an account?{" "}
             <Link
               to="/login"
-              className="text-primary-600 font-semibold hover:text-primary-700 transition-colors"
+              className="text-primary-500 font-bold hover:text-primary-600 transition-colors"
             >
               Sign in
             </Link>

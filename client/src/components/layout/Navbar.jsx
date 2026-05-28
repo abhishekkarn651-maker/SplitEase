@@ -136,7 +136,7 @@ export default function Navbar() {
           : "bg-white/80 border-surface-200"
       }`}
     >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
@@ -153,10 +153,10 @@ export default function Navbar() {
           </Link>
 
           {/* Nav Links + Actions */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
             <Link
               to="/"
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 min-h-[44px] ${
                 isActive("/")
                   ? "bg-primary-50 text-primary-600 dark:bg-primary-900/30"
                   : darkMode
@@ -170,7 +170,7 @@ export default function Navbar() {
 
             <Link
               to="/community"
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 min-h-[44px] ${
                 isActive("/community") || location.pathname.startsWith("/community/")
                   ? "bg-primary-50 text-primary-600"
                   : darkMode
@@ -188,7 +188,7 @@ export default function Navbar() {
 
             <Link
               to="/groups"
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 min-h-[44px] ${
                 isActive("/groups") || location.pathname.startsWith("/groups/")
                   ? "bg-primary-50 text-primary-600"
                   : darkMode
@@ -215,7 +215,7 @@ export default function Navbar() {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className={`relative p-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                className={`relative p-2 rounded-lg transition-all duration-200 cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center ${
                   darkMode
                     ? "text-surface-300 hover:bg-surface-800"
                     : "text-surface-500 hover:bg-surface-100"
@@ -233,7 +233,7 @@ export default function Navbar() {
               {/* Notification Dropdown */}
               {showNotifications && (
                 <div
-                  className={`absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto rounded-2xl border shadow-modal animate-scale-in z-50 ${
+                  className={`absolute right-0 sm:right-0 top-full mt-2 w-[calc(100vw-1.5rem)] sm:w-80 max-h-[70vh] sm:max-h-96 overflow-y-auto rounded-2xl border shadow-modal animate-scale-in z-50 -right-2 ${
                     darkMode
                       ? "bg-surface-800 border-surface-700 text-white"
                       : "bg-white border-surface-200 text-surface-800"
@@ -394,7 +394,7 @@ export default function Navbar() {
             {/* Dark mode toggle */}
             <button
               onClick={toggleDarkMode}
-              className={`p-2 rounded-lg transition-all duration-200 cursor-pointer ${
+              className={`p-2 rounded-lg transition-all duration-200 cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center ${
                 darkMode
                   ? "text-yellow-400 hover:bg-surface-800"
                   : "text-surface-500 hover:bg-surface-100"
@@ -412,7 +412,7 @@ export default function Navbar() {
             {user && (
               <Link
                 to="/profile"
-                className={`flex items-center gap-2 ml-1 px-2.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`flex items-center gap-2 ml-0 sm:ml-1 px-1.5 sm:px-2.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer min-h-[44px] ${
                   darkMode
                     ? "hover:bg-surface-800 text-surface-300 hover:text-white"
                     : "hover:bg-surface-100 text-surface-600 hover:text-surface-800"
@@ -437,7 +437,7 @@ export default function Navbar() {
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className={`p-2 rounded-lg transition-all duration-200 cursor-pointer ${
+              className={`p-2 rounded-lg transition-all duration-200 cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center ${
                 darkMode
                   ? "text-surface-400 hover:text-red-400 hover:bg-surface-800"
                   : "text-surface-400 hover:text-red-500 hover:bg-red-50"

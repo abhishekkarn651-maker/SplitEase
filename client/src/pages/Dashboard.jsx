@@ -66,73 +66,85 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6 animate-slide-up">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 animate-slide-up pb-10">
+      {/* Header Panel */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1
-            className={`text-2xl font-bold ${
-              darkMode ? "text-white" : "text-surface-800"
+            className={`text-3xl font-extrabold tracking-tight ${
+              darkMode ? "text-white" : "text-surface-900"
             }`}
           >
             Dashboard
           </h1>
           <p
-            className={`text-sm mt-1 ${
+            className={`text-sm mt-1 font-medium ${
               darkMode ? "text-surface-400" : "text-surface-500"
             }`}
           >
-            Overview of your expense groups
+            Manage trip spending, settle balances, and share travel spotlights.
           </p>
         </div>
         <Link
           to="/groups/new"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-medium hover:bg-primary-600 transition-all duration-200 shadow-sm hover:shadow-md"
+          className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-primary-500/10 cursor-pointer transform active:scale-95 self-start sm:self-auto min-h-[44px]"
         >
-          + New Group
+          <span className="text-base font-bold">+</span> New Group
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Modern Fintech Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {statCards.map((card) => {
           const CardContent = (
-            <>
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${
-                  darkMode ? card.darkColor : card.color
-                }`}
-              >
-                <card.icon className="w-5 h-5" />
+            <div className="flex flex-col justify-between h-full space-y-4">
+              <div className="flex items-start justify-between">
+                <div
+                  className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
+                    darkMode ? card.darkColor : card.color
+                  } shadow-inner`}
+                >
+                  <card.icon className="w-5 h-5" />
+                </div>
+                {card.link && (
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                    darkMode ? "bg-surface-700 text-surface-300" : "bg-surface-100 text-surface-600"
+                  }`}>
+                    Open
+                  </span>
+                )}
               </div>
-              <p
-                className={`text-xs font-medium uppercase tracking-wide ${
-                  darkMode ? "text-surface-400" : "text-surface-500"
-                }`}
-              >
-                {card.label}
-              </p>
-              <p
-                className={`text-xl sm:text-2xl font-bold mt-0.5 ${
-                  darkMode ? "text-white" : "text-surface-800"
-                }`}
-              >
-                {card.value}
-              </p>
-            </>
+              <div>
+                <p
+                  className={`text-[11px] font-bold uppercase tracking-wider ${
+                    darkMode ? "text-surface-450" : "text-surface-400"
+                  }`}
+                >
+                  {card.label}
+                </p>
+                <p
+                  className={`text-2xl sm:text-3xl font-extrabold tracking-tight mt-1 ${
+                    darkMode ? "text-white" : "text-surface-900"
+                  }`}
+                >
+                  {card.value}
+                </p>
+              </div>
+            </div>
           );
 
-          const cardClass = `rounded-2xl p-4 sm:p-5 transition-all duration-200 hover:shadow-card-hover ${
+          const cardClass = `rounded-3xl p-5 sm:p-6 transition-all duration-300 min-h-[144px] cursor-pointer ${
             darkMode
-              ? "bg-surface-800 border border-surface-700 hover:border-surface-600"
-              : "bg-white border border-surface-200 shadow-card hover:border-primary-200"
-          }`;
+              ? "bg-surface-800 border border-surface-700/60 hover:bg-surface-700/40 hover:border-surface-600/80"
+              : "bg-white border border-surface-200/60 shadow-sm hover:shadow-md hover:border-primary-300/40"
+          } transform hover:-translate-y-0.5 active:scale-[0.99]`;
 
           if (card.link) {
             return (
               <Link
                 key={card.label}
                 to={card.link}
-                className={`${cardClass} block cursor-pointer`}
+                className={`${cardClass} block`}
               >
                 {CardContent}
               </Link>
@@ -140,94 +152,101 @@ export default function Dashboard() {
           }
 
           return (
-            <div key={card.label} className={cardClass}>
+            <div key={card.label} className={`${cardClass} cursor-default transform-none hover:translate-y-0 hover:shadow-sm`}>
               {CardContent}
             </div>
           );
         })}
       </div>
 
-      {/* Recent Activity */}
-      <div
-        className={`rounded-2xl p-5 sm:p-6 transition-colors ${
-          darkMode
-            ? "bg-surface-800 border border-surface-700"
-            : "bg-white border border-surface-200 shadow-card"
-        }`}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2
-            className={`text-lg font-semibold ${
-              darkMode ? "text-white" : "text-surface-800"
-            }`}
-          >
-            Recent Activity
-          </h2>
-          <Link
-            to="/groups"
-            className="text-sm text-primary-500 hover:text-primary-600 font-medium flex items-center gap-1"
-          >
-            View all <HiOutlineArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {stats.recentActivity?.length > 0 ? (
-          <div className="space-y-3">
-            {stats.recentActivity.map((activity) => (
-              <div
-                key={activity._id}
-                className={`flex items-center justify-between p-3 rounded-xl transition-colors ${
-                  darkMode
-                    ? "bg-surface-700/50 hover:bg-surface-700"
-                    : "bg-surface-50 hover:bg-surface-100"
+      {/* Premium Content Rows */}
+      <div className="grid grid-cols-1 gap-6">
+        {/* Recent Activity Card */}
+        <div
+          className={`rounded-3xl p-6 sm:p-8 transition-all duration-300 ${
+            darkMode
+              ? "bg-surface-800 border border-surface-700/60"
+              : "bg-white border border-surface-200/60 shadow-sm"
+          }`}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2
+                className={`text-lg font-bold tracking-tight ${
+                  darkMode ? "text-white" : "text-surface-800"
                 }`}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                      darkMode
-                        ? "bg-primary-900/30 text-primary-400"
-                        : "bg-primary-50 text-primary-600"
+                Recent Activity
+              </h2>
+              <p className={`text-xs mt-0.5 ${darkMode ? "text-surface-400" : "text-surface-500"}`}>
+                Latest expenses logged across all travel groups.
+              </p>
+            </div>
+            <Link
+              to="/groups"
+              className="text-xs text-primary-500 hover:text-primary-600 font-bold flex items-center gap-1 transition-colors uppercase tracking-wider min-h-[44px] px-3"
+            >
+              View Groups <HiOutlineArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {stats.recentActivity?.length > 0 ? (
+            <div className="divide-y divide-surface-100 dark:divide-surface-700/50">
+              {stats.recentActivity.map((activity) => (
+                <div
+                  key={activity._id}
+                  className="flex items-center justify-between py-4 first:pt-0 last:pb-0 group"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div
+                      className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${
+                        darkMode
+                          ? "bg-surface-700 text-primary-400 group-hover:bg-primary-950/20 group-hover:text-primary-300"
+                          : "bg-surface-50 text-primary-600 group-hover:bg-primary-50 group-hover:text-primary-700"
+                      }`}
+                    >
+                      <HiOutlineBanknotes className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p
+                        className={`text-sm font-bold truncate transition-colors ${
+                          darkMode ? "text-surface-150 group-hover:text-white" : "text-surface-800 group-hover:text-primary-600"
+                        }`}
+                      >
+                        {activity.title}
+                      </p>
+                      <p
+                        className={`text-xs mt-0.5 truncate ${
+                          darkMode ? "text-surface-400" : "text-surface-550"
+                        }`}
+                      >
+                        <span className="font-semibold text-surface-650 dark:text-surface-300">{activity.paidBy}</span> paid • {activity.groupName}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-base font-extrabold shrink-0 ml-3 tracking-tight ${
+                      darkMode ? "text-white" : "text-surface-900"
                     }`}
                   >
-                    <HiOutlineBanknotes className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p
-                      className={`text-sm font-medium truncate ${
-                        darkMode ? "text-surface-200" : "text-surface-700"
-                      }`}
-                    >
-                      {activity.title}
-                    </p>
-                    <p
-                      className={`text-xs truncate ${
-                        darkMode ? "text-surface-400" : "text-surface-500"
-                      }`}
-                    >
-                      {activity.paidBy} paid • {activity.groupName}
-                    </p>
-                  </div>
+                    ₹{activity.amount.toLocaleString()}
+                  </span>
                 </div>
-                <span
-                  className={`text-sm font-semibold shrink-0 ml-3 ${
-                    darkMode ? "text-white" : "text-surface-800"
-                  }`}
-                >
-                  ₹{activity.amount.toLocaleString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p
-            className={`text-sm text-center py-8 ${
-              darkMode ? "text-surface-400" : "text-surface-500"
-            }`}
-          >
-            No expenses yet. Create a group and add your first expense!
-          </p>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10">
+              <HiOutlineBanknotes className={`w-12 h-12 mx-auto mb-3 opacity-30 ${darkMode ? "text-white" : "text-surface-800"}`} />
+              <p
+                className={`text-sm font-medium ${
+                  darkMode ? "text-surface-400" : "text-surface-500"
+                }`}
+              >
+                No expenses recorded. Create a trip group to log your first shared bill!
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

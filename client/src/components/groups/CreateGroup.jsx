@@ -63,17 +63,17 @@ export default function CreateGroup() {
     }
   };
 
-  const inputClasses = `w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 outline-none ${
+  const inputClasses = `w-full px-4 py-3 rounded-2xl border text-sm transition-all duration-200 outline-none ${
     darkMode
-      ? "bg-surface-800 border-surface-600 text-white placeholder-surface-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30"
-      : "bg-white border-surface-200 text-surface-800 placeholder-surface-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+      ? "bg-surface-700/40 border-surface-600 text-white placeholder-surface-550 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
+      : "bg-surface-50/50 border-surface-200 text-surface-800 placeholder-surface-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
   }`;
 
   return (
-    <div className="max-w-lg mx-auto animate-slide-up">
+    <div className="max-w-lg mx-auto animate-slide-up pb-10">
       <h1
-        className={`text-2xl font-bold mb-6 ${
-          darkMode ? "text-white" : "text-surface-800"
+        className={`text-3xl font-extrabold tracking-tight mb-6 ${
+          darkMode ? "text-white" : "text-surface-900"
         }`}
       >
         Create a Group
@@ -81,36 +81,36 @@ export default function CreateGroup() {
 
       <form
         onSubmit={handleSubmit}
-        className={`rounded-2xl p-6 space-y-5 ${
+        className={`rounded-3xl p-6 sm:p-8 space-y-6 ${
           darkMode
-            ? "bg-surface-800 border border-surface-700"
-            : "bg-white border border-surface-200 shadow-card"
+            ? "bg-surface-800 border border-surface-700/60"
+            : "bg-white border border-surface-200/60 shadow-sm"
         }`}
       >
         {/* ── Icon Picker ── */}
-        <div>
+        <div className="space-y-2">
           <label
-            className={`block text-sm font-medium mb-2 ${
-              darkMode ? "text-surface-300" : "text-surface-600"
+            className={`block text-xs font-bold uppercase tracking-wider ${
+              darkMode ? "text-surface-400" : "text-surface-500"
             }`}
           >
             Group Icon
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-6 gap-2">
             {ICON_OPTIONS.map((emoji) => (
               <button
                 key={emoji}
                 type="button"
                 onClick={() => setIcon(emoji)}
-                className={`w-10 h-10 rounded-xl text-lg flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                className={`w-11 h-11 rounded-2xl text-lg flex items-center justify-center transition-all duration-300 cursor-pointer ${
                   icon === emoji
                     ? darkMode
-                      ? "bg-primary-900/40 border-2 border-primary-500 shadow-md scale-110"
-                      : "bg-primary-50 border-2 border-primary-500 shadow-md scale-110"
+                      ? "bg-primary-900/40 border-2 border-primary-500 shadow-md scale-105"
+                      : "bg-primary-50 border-2 border-primary-500 shadow-md scale-105 text-primary-600"
                     : darkMode
-                    ? "bg-surface-700 border border-surface-600 hover:border-surface-500 hover:bg-surface-600"
+                    ? "bg-surface-700 border border-surface-650 hover:border-surface-500 hover:bg-surface-650"
                     : "bg-surface-50 border border-surface-200 hover:border-surface-300 hover:bg-white"
-                }`}
+                } transform active:scale-95`}
               >
                 {emoji}
               </button>
@@ -119,10 +119,10 @@ export default function CreateGroup() {
         </div>
 
         {/* Group Name */}
-        <div>
+        <div className="space-y-1.5">
           <label
-            className={`block text-sm font-medium mb-1.5 ${
-              darkMode ? "text-surface-300" : "text-surface-600"
+            className={`block text-xs font-bold uppercase tracking-wider ${
+              darkMode ? "text-surface-400" : "text-surface-500"
             }`}
           >
             Group Name
@@ -138,10 +138,10 @@ export default function CreateGroup() {
         </div>
 
         {/* Description */}
-        <div>
+        <div className="space-y-1.5">
           <label
-            className={`block text-sm font-medium mb-1.5 ${
-              darkMode ? "text-surface-300" : "text-surface-600"
+            className={`block text-xs font-bold uppercase tracking-wider ${
+              darkMode ? "text-surface-400" : "text-surface-500"
             }`}
           >
             Description{" "}
@@ -154,15 +154,15 @@ export default function CreateGroup() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What's this group about?"
             rows={2}
-            className={inputClasses}
+            className={`${inputClasses} resize-none`}
           />
         </div>
 
         {/* ── Category Pills ── */}
-        <div>
+        <div className="space-y-2">
           <label
-            className={`block text-sm font-medium mb-2 ${
-              darkMode ? "text-surface-300" : "text-surface-600"
+            className={`block text-xs font-bold uppercase tracking-wider ${
+              darkMode ? "text-surface-400" : "text-surface-500"
             }`}
           >
             Category
@@ -176,15 +176,15 @@ export default function CreateGroup() {
                   setCategory(c.value);
                   setIcon(c.emoji);
                 }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 cursor-pointer min-h-[44px] ${
                   category === c.value
                     ? darkMode
-                      ? "bg-primary-900/40 text-primary-400 border border-primary-700"
-                      : "bg-primary-50 text-primary-700 border border-primary-300"
+                      ? "bg-primary-900/40 text-primary-400 border-2 border-primary-500"
+                      : "bg-primary-50 text-primary-700 border-2 border-primary-500 shadow-sm"
                     : darkMode
-                    ? "bg-surface-700 text-surface-400 border border-surface-600 hover:border-surface-500"
-                    : "bg-surface-50 text-surface-500 border border-surface-200 hover:border-surface-300"
-                }`}
+                    ? "bg-surface-700 text-surface-400 border border-surface-650 hover:border-surface-500"
+                    : "bg-surface-50 text-surface-500 border border-surface-200 hover:border-surface-300 hover:bg-white"
+                } transform active:scale-95`}
               >
                 <span>{c.emoji}</span>
                 {c.label}
@@ -194,39 +194,47 @@ export default function CreateGroup() {
         </div>
 
         {/* Currency */}
-        <div>
+        <div className="space-y-1.5">
           <label
-            className={`block text-sm font-medium mb-1.5 ${
-              darkMode ? "text-surface-300" : "text-surface-600"
+            className={`block text-xs font-bold uppercase tracking-wider ${
+              darkMode ? "text-surface-400" : "text-surface-500"
             }`}
           >
             Currency
           </label>
-          <select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            className={inputClasses}
-          >
-            {CURRENCY_OPTIONS.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.symbol} {c.value} — {c.label}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className={`${inputClasses} appearance-none pr-10`}
+            >
+              {CURRENCY_OPTIONS.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.symbol} {c.value} — {c.label}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-surface-450">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+              </svg>
+            </div>
+          </div>
         </div>
 
-        {/* Info about inviting members */}
-        <div className={`rounded-xl p-3 text-sm ${
-          darkMode ? "bg-surface-700/50 text-surface-400" : "bg-surface-50 text-surface-500"
+        {/* Info Banner */}
+        <div className={`rounded-2xl p-4 text-xs font-semibold leading-relaxed flex items-center gap-2 ${
+          darkMode ? "bg-surface-700/40 text-surface-400" : "bg-surface-50 text-surface-500"
         }`}>
-          💡 You'll be added as admin. Invite members after creating the group.
+          <span>💡</span>
+          <span>You'll be added as admin. Invite members after creating the group.</span>
         </div>
 
         {/* Submit */}
         <button
           type="submit"
           disabled={!name.trim() || submitting}
-          className="w-full py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          className="w-full py-4 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl font-bold transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md hover:shadow-lg hover:shadow-primary-500/10 transform active:scale-[0.98]"
         >
           {submitting ? "Creating..." : "Create Group"}
         </button>

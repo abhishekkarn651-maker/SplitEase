@@ -143,11 +143,11 @@ export default function GroupDetails() {
   if (!currentGroup) return null;
 
   return (
-    <div className="animate-slide-up">
+    <div className="animate-slide-up pb-20 relative">
       {/* Back link */}
       <Link
         to="/groups"
-        className={`inline-flex items-center gap-1 text-sm mb-4 transition-colors ${
+        className={`inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider mb-5 transition-all ${
           darkMode
             ? "text-surface-400 hover:text-white"
             : "text-surface-500 hover:text-surface-800"
@@ -157,76 +157,76 @@ export default function GroupDetails() {
         Back to Groups
       </Link>
 
-      {/* Group Header */}
+      {/* Group Header Card */}
       <div
-        className={`rounded-2xl p-5 sm:p-6 mb-6 ${
+        className={`rounded-3xl p-6 sm:p-8 mb-6 transition-all duration-300 ${
           darkMode
-            ? "bg-surface-800 border border-surface-700"
-            : "bg-white border border-surface-200 shadow-card"
+            ? "bg-surface-800 border border-surface-700/60"
+            : "bg-white border border-surface-200/60 shadow-sm"
         }`}
       >
-        <div className="flex items-start justify-between flex-wrap gap-4">
-          <div className="flex items-start gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-5">
+          <div className="flex items-start gap-4">
             {/* Group Icon */}
             <div
-              className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 ${
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0 ${
                 darkMode
-                  ? "bg-primary-900/30"
-                  : "bg-primary-50"
-              }`}
+                  ? "bg-surface-700 text-primary-400"
+                  : "bg-surface-50 text-primary-600"
+              } shadow-inner`}
             >
               {currentGroup.icon || "👥"}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1
-                  className={`text-xl sm:text-2xl font-bold ${
-                    darkMode ? "text-white" : "text-surface-800"
+                  className={`text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight ${
+                    darkMode ? "text-white" : "text-surface-900"
                   }`}
                 >
                   {currentGroup.name}
                 </h1>
                 {currentGroup.category && currentGroup.category !== "other" && (
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+                    className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full ${
                       darkMode
-                        ? "bg-primary-900/30 text-primary-400"
-                        : "bg-primary-50 text-primary-700"
+                        ? "bg-primary-950/20 text-primary-400 border border-primary-900/30"
+                        : "bg-primary-50 text-primary-600 border border-primary-100"
                     }`}
                   >
-                    {currentGroup.category.charAt(0).toUpperCase() + currentGroup.category.slice(1)}
+                    {currentGroup.category}
                   </span>
                 )}
               </div>
               {currentGroup.description && (
                 <p
-                  className={`text-sm mt-1 ${
+                  className={`text-sm mt-1.5 font-medium ${
                     darkMode ? "text-surface-400" : "text-surface-500"
                   }`}
                 >
                   {currentGroup.description}
                 </p>
               )}
-              <div className="flex items-center gap-4 mt-2">
+              <div className="flex flex-wrap items-center gap-4 mt-3">
                 <span
-                  className={`flex items-center gap-1 text-sm ${
+                  className={`flex items-center gap-1.5 text-xs font-semibold ${
                     darkMode ? "text-surface-400" : "text-surface-500"
                   }`}
                 >
-                  <HiOutlineUserGroup className="w-4 h-4" />
+                  <HiOutlineUserGroup className="w-4 h-4 text-surface-400" />
                   {currentGroup.members.length} members
                 </span>
                 <span
-                  className={`flex items-center gap-1 text-sm ${
+                  className={`flex items-center gap-1.5 text-xs font-semibold ${
                     darkMode ? "text-surface-400" : "text-surface-500"
                   }`}
                 >
-                  <HiOutlineBanknotes className="w-4 h-4" />
+                  <HiOutlineBanknotes className="w-4 h-4 text-surface-400" />
                   {expenses.length} expenses
                 </span>
                 <span
-                  className={`flex items-center gap-1 text-sm font-medium ${
-                    darkMode ? "text-primary-400" : "text-primary-600"
+                  className={`flex items-center gap-1.5 text-xs font-bold ${
+                    darkMode ? "text-primary-450" : "text-primary-650"
                   }`}
                 >
                   ₹{totalAmount.toLocaleString()} total
@@ -234,57 +234,59 @@ export default function GroupDetails() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* Desktop & Tablet Actions Header */}
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {isAdmin && (
               <button
                 onClick={() => setShowEditModal(true)}
-                className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow-md cursor-pointer ${
+                className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm hover:shadow-md cursor-pointer min-h-[44px] ${
                   darkMode
-                    ? "bg-surface-700 text-surface-300 hover:bg-surface-600 border border-surface-600"
+                    ? "bg-surface-700 text-surface-300 hover:bg-surface-650 border border-surface-650"
                     : "bg-surface-100 text-surface-600 hover:bg-surface-200 border border-surface-200"
                 }`}
               >
-                <HiOutlinePencilSquare className="w-4 h-4" />
-                Edit Group
+                <HiOutlinePencilSquare className="w-4.5 h-4.5" />
+                Edit
               </button>
             )}
             <button
               onClick={handleLeaveGroup}
-              className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow-md cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm hover:shadow-md cursor-pointer min-h-[44px] ${
                 darkMode
-                  ? "bg-surface-700 text-red-400 hover:text-red-300 hover:bg-surface-600 border border-surface-600"
-                  : "bg-surface-100 text-red-600 hover:bg-red-50 hover:text-red-700 border border-surface-200"
+                  ? "bg-surface-700 text-red-400 hover:text-red-300 hover:bg-surface-650 border border-surface-650"
+                  : "bg-surface-100 text-red-650 hover:bg-red-50 hover:text-red-700 border border-surface-200"
               }`}
             >
-              <HiOutlineArrowRightOnRectangle className="w-4 h-4" />
-              Leave Group
+              <HiOutlineArrowRightOnRectangle className="w-4.5 h-4.5" />
+              Leave
             </button>
             <button
               onClick={() => setShowCommunityModal(true)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow-md cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm hover:shadow-md cursor-pointer min-h-[44px] ${
                 darkMode
-                  ? "bg-surface-700 text-surface-300 hover:bg-surface-600 border border-surface-600"
+                  ? "bg-surface-700 text-surface-300 hover:bg-surface-650 border border-surface-650"
                   : "bg-surface-100 text-surface-600 hover:bg-surface-200 border border-surface-200"
               }`}
             >
-              <HiOutlineGlobeAlt className="w-4 h-4" />
-              Share to Community
+              <HiOutlineGlobeAlt className="w-4.5 h-4.5" />
+              Share
             </button>
             <button
               onClick={() => {
                 setEditingExpense(null);
                 setShowForm(true);
               }}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-medium hover:bg-primary-600 transition-all shadow-sm hover:shadow-md cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-primary-500 text-white rounded-2xl text-xs font-bold hover:bg-primary-600 transition-all shadow-md hover:shadow-lg hover:shadow-primary-500/10 cursor-pointer min-h-[44px]"
             >
-              <HiOutlinePlus className="w-4 h-4" />
+              <HiOutlinePlus className="w-4.5 h-4.5" />
               Add Expense
             </button>
           </div>
         </div>
 
-        {/* Member chips */}
-        <div className="flex flex-wrap gap-2 mt-4">
+        {/* Member list chips */}
+        <div className="flex flex-wrap gap-2 mt-5 pt-5 border-t border-surface-100 dark:border-surface-700/50">
           {currentGroup.members.map((member) => {
             const memberUser = member.user || {};
             const displayName = memberUser.name || memberUser.username || "Unknown";
@@ -293,31 +295,31 @@ export default function GroupDetails() {
             return (
               <span
                 key={memberUser._id || uname}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl text-xs font-semibold ${
                   darkMode
                     ? "bg-surface-700 text-surface-300"
-                    : "bg-surface-100 text-surface-600"
+                    : "bg-surface-50 text-surface-600"
                 }`}
               >
                 <span
                   className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                     darkMode
                       ? "bg-primary-900/40 text-primary-400"
-                      : "bg-primary-100 text-primary-700"
+                      : "bg-primary-100 text-primary-750"
                   }`}
                 >
                   {displayName.charAt(0).toUpperCase()}
                 </span>
                 {displayName}
                 {member.role === "admin" && (
-                  <span className={`text-[10px] px-1 py-0.5 rounded font-semibold ${
-                    darkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-50 text-amber-600"
+                  <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.2 rounded font-bold ${
+                    darkMode ? "bg-amber-950/40 text-amber-400 border border-amber-900/30" : "bg-amber-50 text-amber-600"
                   }`}>Admin</span>
                 )}
                 {isAdmin && !isMe && (
                   <button
                     onClick={() => handleRemoveMember(memberUser._id)}
-                    className="ml-1 hover:text-red-500 transition-colors p-0.5 rounded cursor-pointer"
+                    className="ml-1 hover:text-red-500 transition-colors p-0.5 rounded cursor-pointer min-w-[20px] min-h-[20px] flex items-center justify-center"
                     title={`Remove ${displayName}`}
                   >
                     <HiOutlineXMark className="w-3.5 h-3.5" />
@@ -330,23 +332,23 @@ export default function GroupDetails() {
 
         {/* Invite Member (admin only) */}
         {isAdmin && (
-          <div className="mt-4 flex gap-2">
+          <div className="mt-5 pt-5 border-t border-surface-100 dark:border-surface-700/50 flex gap-2">
             <input
               type="text"
               value={inviteUsername}
               onChange={(e) => setInviteUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
               onKeyDown={(e) => e.key === "Enter" && handleInvite()}
               placeholder="Invite by username..."
-              className={`flex-1 px-4 py-2 rounded-xl border text-sm outline-none transition-all ${
+              className={`flex-1 px-4 py-2.5 rounded-2xl border text-sm outline-none transition-all duration-200 min-h-[44px] ${
                 darkMode
-                  ? "bg-surface-700 border-surface-600 text-white placeholder-surface-400 focus:border-primary-500"
-                  : "bg-surface-50 border-surface-200 text-surface-800 placeholder-surface-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                  ? "bg-surface-700/40 border-surface-600 text-white placeholder-surface-500 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
+                  : "bg-surface-50 border-surface-200 text-surface-800 placeholder-surface-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
               }`}
             />
             <button
               onClick={handleInvite}
               disabled={!inviteUsername.trim() || inviting}
-              className="px-4 py-2 bg-primary-500 text-white rounded-xl text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md hover:shadow-lg min-h-[44px]"
             >
               {inviting ? "Sending..." : "Invite"}
             </button>
@@ -354,16 +356,14 @@ export default function GroupDetails() {
         )}
       </div>
 
-      {/* Tab Toggle */}
-      <div className="flex gap-1 mb-5">
+      {/* Segmented Tab Pill Controller */}
+      <div className="inline-flex p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl gap-1 mb-6 border border-surface-200/50 dark:border-surface-700/40 w-full sm:w-auto">
         <button
           onClick={() => setActiveTab("expenses")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+          className={`flex items-center justify-center gap-1.5 flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer min-h-[40px] ${
             activeTab === "expenses"
-              ? "bg-primary-500 text-white shadow-sm"
-              : darkMode
-              ? "bg-surface-800 text-surface-300 hover:bg-surface-700"
-              : "bg-white text-surface-500 hover:bg-surface-100 border border-surface-200"
+              ? "bg-white dark:bg-surface-700 text-primary-500 dark:text-primary-400 shadow-sm"
+              : "text-surface-500 hover:text-surface-850 dark:text-surface-400 dark:hover:text-white"
           }`}
         >
           <HiOutlineBanknotes className="w-4 h-4" />
@@ -371,12 +371,10 @@ export default function GroupDetails() {
         </button>
         <button
           onClick={() => setActiveTab("settlements")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+          className={`flex items-center justify-center gap-1.5 flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer min-h-[40px] ${
             activeTab === "settlements"
-              ? "bg-primary-500 text-white shadow-sm"
-              : darkMode
-              ? "bg-surface-800 text-surface-300 hover:bg-surface-700"
-              : "bg-white text-surface-500 hover:bg-surface-100 border border-surface-200"
+              ? "bg-white dark:bg-surface-700 text-primary-500 dark:text-primary-400 shadow-sm"
+              : "text-surface-500 hover:text-surface-850 dark:text-surface-400 dark:hover:text-white"
           }`}
         >
           <HiOutlineScale className="w-4 h-4" />
@@ -387,29 +385,27 @@ export default function GroupDetails() {
       {/* Tab Content */}
       {activeTab === "expenses" ? (
         <div
-          className={`rounded-2xl p-5 sm:p-6 ${
+          className={`rounded-3xl p-6 sm:p-8 transition-all duration-300 ${
             darkMode
-              ? "bg-surface-800 border border-surface-700"
-              : "bg-white border border-surface-200 shadow-card"
+              ? "bg-surface-800 border border-surface-700/60"
+              : "bg-white border border-surface-200/60 shadow-sm"
           }`}
         >
           {/* Search Bar */}
-          <div className="mb-4">
+          <div className="mb-5">
             <div className="relative">
               <HiOutlineMagnifyingGlass
-                className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${
-                  darkMode ? "text-surface-400" : "text-surface-400"
-                }`}
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-surface-400 dark:text-surface-500"
               />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search expenses by title or payer..."
-                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm transition-all outline-none ${
+                className={`w-full pl-11 pr-4 py-3 rounded-2xl border text-sm outline-none transition-all duration-200 min-h-[44px] ${
                   darkMode
-                    ? "bg-surface-700 border-surface-600 text-white placeholder-surface-400 focus:border-primary-500"
-                    : "bg-surface-50 border-surface-200 text-surface-800 placeholder-surface-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                    ? "bg-surface-700/40 border-surface-650 text-white placeholder-surface-500 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
+                    : "bg-surface-50 border-surface-200 text-surface-800 placeholder-surface-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
                 }`}
               />
             </div>
@@ -419,15 +415,27 @@ export default function GroupDetails() {
         </div>
       ) : (
         <div
-          className={`rounded-2xl p-5 sm:p-6 ${
+          className={`rounded-3xl p-6 sm:p-8 transition-all duration-300 ${
             darkMode
-              ? "bg-surface-800 border border-surface-700"
-              : "bg-white border border-surface-200 shadow-card"
+              ? "bg-surface-800 border border-surface-700/60"
+              : "bg-white border border-surface-200/60 shadow-sm"
           }`}
         >
           <SettlementSummary settlements={settlements} />
         </div>
       )}
+
+      {/* Floating Action Button (FAB) on mobile for extremely premium UX */}
+      <button
+        onClick={() => {
+          setEditingExpense(null);
+          setShowForm(true);
+        }}
+        className="fixed bottom-6 right-6 md:hidden z-40 w-14 h-14 bg-primary-500 hover:bg-primary-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-primary-500/30 active:scale-95 transition-transform duration-200 cursor-pointer"
+        aria-label="Add Expense FAB"
+      >
+        <HiOutlinePlus className="w-6 h-6" />
+      </button>
 
       {/* Expense Form Modal */}
       {showForm && (
