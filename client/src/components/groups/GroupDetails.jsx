@@ -15,8 +15,10 @@ import {
   HiOutlinePencilSquare,
   HiOutlineXMark,
   HiOutlineArrowRightOnRectangle,
+  HiOutlineGlobeAlt,
 } from "react-icons/hi2";
 import EditGroupModal from "./EditGroupModal";
+import CreatePostModal from "../community/CreatePostModal";
 import { useAuth } from "../../context/AuthContext";
 
 /**
@@ -55,6 +57,7 @@ export default function GroupDetails() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [inviteUsername, setInviteUsername] = useState("");
   const [inviting, setInviting] = useState(false);
+  const [showCommunityModal, setShowCommunityModal] = useState(false);
 
   // Determine if current user is admin of this group
   const isAdmin = currentGroup?.members?.some(
@@ -257,6 +260,17 @@ export default function GroupDetails() {
               Leave Group
             </button>
             <button
+              onClick={() => setShowCommunityModal(true)}
+              className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow-md cursor-pointer ${
+                darkMode
+                  ? "bg-surface-700 text-surface-300 hover:bg-surface-600 border border-surface-600"
+                  : "bg-surface-100 text-surface-600 hover:bg-surface-200 border border-surface-200"
+              }`}
+            >
+              <HiOutlineGlobeAlt className="w-4 h-4" />
+              Share to Community
+            </button>
+            <button
               onClick={() => {
                 setEditingExpense(null);
                 setShowForm(true);
@@ -430,6 +444,14 @@ export default function GroupDetails() {
           group={currentGroup}
           onClose={() => setShowEditModal(false)}
           onSaved={handleGroupSaved}
+        />
+      )}
+
+      {/* Share to Community Modal */}
+      {showCommunityModal && (
+        <CreatePostModal
+          group={currentGroup}
+          onClose={() => setShowCommunityModal(false)}
         />
       )}
     </div>

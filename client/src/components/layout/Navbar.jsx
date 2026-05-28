@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import {
   HiOutlineHome,
   HiOutlineUserGroup,
+  HiOutlineGlobeAlt,
   HiOutlineMoon,
   HiOutlineSun,
   HiOutlineBellAlert,
@@ -117,6 +118,24 @@ export default function Navbar() {
             >
               <HiOutlineHome className="w-4 h-4" />
               <span className="hidden sm:inline">Dashboard</span>
+            </Link>
+
+            <Link
+              to="/community"
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                isActive("/community") || location.pathname.startsWith("/community/")
+                  ? "bg-primary-50 text-primary-600"
+                  : darkMode
+                  ? "text-surface-300 hover:text-white hover:bg-surface-800"
+                  : "text-surface-500 hover:text-surface-800 hover:bg-surface-100"
+              } ${
+                (isActive("/community") || location.pathname.startsWith("/community/")) && darkMode
+                  ? "bg-primary-900/30 text-primary-400"
+                  : ""
+              }`}
+            >
+              <HiOutlineGlobeAlt className="w-4 h-4" />
+              <span className="hidden sm:inline">Community</span>
             </Link>
 
             <Link

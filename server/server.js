@@ -53,6 +53,7 @@ app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/groups", require("./routes/groupRoutes"));
 app.use("/api/expenses", require("./routes/expenseRoutes"));
 app.use("/api/invitations", require("./routes/invitationRoutes"));
+app.use("/api/community", require("./routes/communityRoutes"));
 
 // ========================================
 // Error Handling Middleware

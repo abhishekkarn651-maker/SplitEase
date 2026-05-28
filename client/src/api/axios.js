@@ -148,4 +148,33 @@ export const acceptInvitation = (id) => API.put(`/invitations/${id}/accept`);
 /** Decline a pending invitation */
 export const declineInvitation = (id) => API.put(`/invitations/${id}/decline`);
 
+// ========================================
+// COMMUNITY API CALLS
+// ========================================
+
+/** Get paginated community feed */
+export const fetchCommunityPosts = (params = {}) =>
+  API.get("/community", { params });
+
+/** Get single community post */
+export const fetchCommunityPost = (id) => API.get(`/community/${id}`);
+
+/** Create a community post (multipart form data for photos) */
+export const createCommunityPost = (formData) =>
+  API.post("/community", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+/** Toggle helpful vote on a post */
+export const toggleHelpful = (id) => API.put(`/community/${id}/helpful`);
+
+/** Toggle wishlist on a post */
+export const toggleWishlist = (id) => API.put(`/community/${id}/wishlist`);
+
+/** Get user's wishlisted posts */
+export const fetchMyWishlist = () => API.get("/community/wishlist");
+
+/** Delete own community post */
+export const deleteCommunityPost = (id) => API.delete(`/community/${id}`);
+
 export default API;
